@@ -1,8 +1,9 @@
+// src/app/(app)/analytics/page.tsx
 'use client'
 export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { cn, scoreColor, formatDate } from '@/lib/utils'
+import { cn, scoreColor } from '@/lib/utils'
 import { BarChart2, TrendingUp, TrendingDown, Minus, FileText, Award, RefreshCw, ChevronRight } from 'lucide-react'
 import { Card, CardSm, ScoreBar } from '@/components/ui/primitives'
 import type { AnalyticsDashboard, ResumeAnalyticsSummary, ScoreDataPoint } from '@/types/resume'

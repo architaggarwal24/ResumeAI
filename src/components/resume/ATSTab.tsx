@@ -1,8 +1,9 @@
+// src/components/resume/ATSTab.tsx
 'use client'
 import { useState } from 'react'
 import { useResumeStore } from '@/store/resumeStore'
 import { Button, Card, CardSm, ScoreBar, Badge } from '@/components/ui/primitives'
-import { Zap, ChevronDown, ChevronUp, Check, X } from 'lucide-react'
+import { Zap, ChevronDown, ChevronUp, Check, X, CheckCheck, Undo2, Redo2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Suggestion } from '@/types/resume'
 
@@ -16,13 +17,14 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
   const {
     resumeData, atsResult, jobDescription,
     setATSResult, setJobDescription, byokCreds,
-    loading, setLoading, addToast, updateResumeField,
+    loading, setLoading, addToast, updateResumeFieldSilent,
+    undo, redo, undoPast, undoFuture,
   } = useResumeStore()
 
-  const [localJD, setLocalJD]         = useState(jobDescription)
-  const [dismissed, setDismissed]     = useState<Set<string>>(new Set())
-  const [accepted, setAccepted]       = useState<Set<string>>(new Set())
-  const [expandedSugg, setExpanded]   = useState<string | null>(null)
+  const [localJD, setLocalJD]       = useState(jobDescription)
+  const [dismissed, setDismissed]   = useState<Set<string>>(new Set())
+  const [accepted, setAccepted]     = useState<Set<string>>(new Set())
+  const [expandedSugg, setExpanded] = useState<string | null>(null)
 
   async function runATS() {
     if (!resumeData || !byokCreds.apiKey) { addToast('Add API key first', 'error'); return }
@@ -46,37 +48,76 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
     setLoading('ats', false)
   }
 
-  function acceptSuggestion(s: Suggestion) {
-    // Apply suggestion to resume data based on targetId
-    updateResumeField(prev => {
+  // Apply a single suggestion to resumeData without wiping the ATS results.
+  // Uses updateResumeFieldSilent (same as Score tab pointer suggestions) so
+  // the score cards stay visible after applying.
+  function applySuggestion(s: Suggestion) {
+    updateResumeFieldSilent(prev => {
       const next = JSON.parse(JSON.stringify(prev))
-      // Search bullets in experience
       for (const exp of next.experience || []) {
         for (const bul of exp.bullets || []) {
           if (bul.id === s.targetId) { bul.text = s.suggested; return next }
         }
       }
-      // Search project bullets
       for (const proj of next.projects || []) {
         for (const bul of proj.bullets || []) {
           if (bul.id === s.targetId) { bul.text = s.suggested; return next }
         }
       }
-      // Summary
-      if (s.section === 'summary') { next.summary = s.suggested; return next }
+      if (s.section === 'summary' || s.targetId === 'summary') {
+        next.summary = s.suggested; return next
+      }
+      // Skills — replace skills text wholesale if targeted
+      if (s.section === 'skills') {
+        // skills suggestions are free-form; apply as a new flat category if we can't match
+        return next
+      }
       return next
     })
     setAccepted(p => new Set(p).add(s.id))
-    addToast('Suggestion applied to resume', 'success')
+    setExpanded(null)
+    addToast('Suggestion applied — undo with Ctrl+Z', 'success')
   }
 
-  const isLoading = loading.ats
+  function applyAll() {
+    const pending = suggestions.filter(s => !accepted.has(s.id) && !dismissed.has(s.id))
+    if (!pending.length) return
+    pending.forEach(s => applySuggestion(s))
+    addToast(`Applied ${pending.length} suggestion${pending.length > 1 ? 's' : ''} — undo with Ctrl+Z`, 'success')
+  }
+
+  const isLoading  = loading.ats
+  const suggestions = atsResult ? (asArray(atsResult.suggestions) as typeof atsResult.suggestions) : []
+  const pendingCount = suggestions.filter(s => !accepted.has(s.id) && !dismissed.has(s.id)).length
+  const acceptedCount = accepted.size
 
   return (
     <div className="mx-auto px-6 py-6 max-w-3xl">
-      <div className="flex items-center gap-2 mb-6">
-        <Zap size={16} className="text-violet-400" />
-        <h2 className="font-bold text-lg">ATS vs Job Description</h2>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Zap size={16} className="text-violet-400" />
+          <h2 className="font-bold text-lg">ATS vs Job Description</h2>
+        </div>
+        {/* Undo/Redo — useful after applying suggestions */}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => { undo(); addToast('Undo', 'info', 1500) }}
+            disabled={undoPast.length === 0}
+            title="Undo (Ctrl+Z)"
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+          >
+            <Undo2 size={14} />
+          </button>
+          <button
+            onClick={() => { redo(); addToast('Redo', 'info', 1500) }}
+            disabled={undoFuture.length === 0}
+            title="Redo (Ctrl+Shift+Z)"
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+          >
+            <Redo2 size={14} />
+          </button>
+        </div>
       </div>
 
       {/* JD Input */}
@@ -110,7 +151,9 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
               <p className="text-xs text-slate-500">/100</p>
             </Card>
             <Card className="text-center py-5">
-              <p className="text-xs font-mono text-slate-500 mb-2">After All Suggestions</p>
+              <p className="text-xs font-mono text-slate-500 mb-2">
+                {acceptedCount > 0 ? `After ${acceptedCount} Applied` : 'After All Suggestions'}
+              </p>
               <div className="text-5xl font-bold font-mono mb-1 text-emerald-400">
                 {atsResult.atsScore.after}
               </div>
@@ -149,18 +192,39 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
           )}
 
           {/* Suggestions */}
-          {(asArray(atsResult.suggestions) as typeof atsResult.suggestions).length > 0 && (
+          {suggestions.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="font-semibold text-sm">
-                  Suggestions
-                  <span className="text-xs font-mono text-slate-500 ml-2">
-                    {accepted.size}/{atsResult.suggestions.length} accepted
-                  </span>
-                </p>
+                <div>
+                  <p className="font-semibold text-sm">Suggestions</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {acceptedCount > 0
+                      ? <span className="text-emerald-400">{acceptedCount} applied</span>
+                      : null}
+                    {acceptedCount > 0 && pendingCount > 0 && ' · '}
+                    {pendingCount > 0 && `${pendingCount} pending`}
+                    {dismissed.size > 0 && ` · ${dismissed.size} dismissed`}
+                  </p>
+                </div>
+                {pendingCount > 1 && (
+                  <Button size="sm" variant="success" onClick={applyAll}>
+                    <CheckCheck size={12} />Apply All ({pendingCount})
+                  </Button>
+                )}
               </div>
+
+              {/* Progress bar */}
+              {acceptedCount > 0 && (
+                <div className="h-1 w-full bg-white/5 rounded-full mb-3 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500/60 rounded-full transition-all duration-500"
+                    style={{ width: `${(acceptedCount / suggestions.length) * 100}%` }}
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
-                {(asArray(atsResult.suggestions) as typeof atsResult.suggestions).map(s => {
+                {suggestions.map(s => {
                   const isAccepted  = accepted.has(s.id)
                   const isDismissed = dismissed.has(s.id)
                   const isExpanded  = expandedSugg === s.id
@@ -174,35 +238,61 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
                                       'border-white/8 bg-[#16161d] hover:border-white/15'
                       )}
                     >
-                      <div
-                        className="flex items-center gap-3 px-4 py-3 cursor-pointer"
-                        onClick={() => setExpanded(isExpanded ? null : s.id)}
-                      >
+                      {/* Collapsed row — always shows quick Apply + Dismiss */}
+                      <div className="flex items-center gap-3 px-4 py-3">
                         <PriorityDot priority={s.priority} />
-                        <span className="flex-1 text-xs text-slate-300 truncate">{s.reason}</span>
-                        <div className="flex items-center gap-1.5">
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => !isAccepted && !isDismissed && setExpanded(isExpanded ? null : s.id)}
+                        >
+                          <p className="text-xs text-slate-300 truncate">{s.reason}</p>
+                          <p className="text-xs text-slate-600 mt-0.5 truncate">
+                            {s.section} · {s.category}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <Badge variant={s.priority as 'high' | 'medium' | 'low'}>{s.priority}</Badge>
-                          <span className="text-slate-600 text-xs font-mono">{s.category}</span>
-                          {isExpanded ? <ChevronUp size={13} className="text-slate-500" /> : <ChevronDown size={13} className="text-slate-500" />}
+                          {isAccepted ? (
+                            <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                              <Check size={12} />Applied
+                            </span>
+                          ) : isDismissed ? (
+                            <span className="text-xs text-slate-600">Dismissed</span>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => applySuggestion(s)}
+                                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors"
+                              >
+                                <Check size={11} />Apply
+                              </button>
+                              <button
+                                onClick={() => setDismissed(p => new Set(p).add(s.id))}
+                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg hover:bg-white/5 text-slate-500 hover:text-red-400 transition-colors"
+                              >
+                                <X size={11} />
+                              </button>
+                              <button
+                                onClick={() => setExpanded(isExpanded ? null : s.id)}
+                                className="text-slate-600 hover:text-slate-400 transition-colors"
+                              >
+                                {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
-                      {isExpanded && !isAccepted && (
+
+                      {/* Expanded diff — original vs suggested */}
+                      {isExpanded && !isAccepted && !isDismissed && (
                         <div className="px-4 pb-4 border-t border-white/7">
                           <div className="mt-3 space-y-2">
-                            <div className="text-xs text-red-400 line-through bg-red-400/5 border border-red-400/15 rounded-lg px-3 py-2 leading-relaxed">
+                            <div className="text-xs text-red-400/80 line-through bg-red-400/5 border border-red-400/15 rounded-lg px-3 py-2 leading-relaxed">
                               {s.original}
                             </div>
                             <div className="text-xs text-emerald-400 bg-emerald-400/5 border border-emerald-400/15 rounded-lg px-3 py-2 leading-relaxed">
                               {s.suggested}
                             </div>
-                          </div>
-                          <div className="flex gap-2 mt-3">
-                            <Button variant="success" size="sm" onClick={() => acceptSuggestion(s)}>
-                              <Check size={12} />Apply
-                            </Button>
-                            <Button variant="danger" size="sm" onClick={() => setDismissed(p => new Set(p).add(s.id))}>
-                              <X size={12} />Dismiss
-                            </Button>
                           </div>
                         </div>
                       )}

@@ -1,3 +1,4 @@
+// src/app/(app)/build/page.tsx
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -8,7 +9,7 @@ import { generateId } from '@/lib/utils'
 import { Button, Card } from '@/components/ui/primitives'
 import { cn } from '@/lib/utils'
 import { renderTemplate } from '@/lib/templates/render'
-import { Sparkles, ChevronRight, ChevronLeft, Check, Plus, Trash2, User, Briefcase, GraduationCap, Code2, FolderOpen, Eye } from 'lucide-react'
+import { Sparkles, ChevronRight, ChevronLeft, Check, Plus, Trash2, User, Briefcase, GraduationCap, Code2, Eye } from 'lucide-react'
 import type { ResumeData, Experience, Education } from '@/types/resume'
 
 const STEPS = [
@@ -312,7 +313,7 @@ function SkillsStep({ data, update }: Pick<StepProps, 'data' | 'update'>) {
 function PreviewStep({ data }: Pick<StepProps, 'data'>) {
   return (
     <div>
-      <p className="text-sm text-slate-400 mb-4">Here's how your resume looks. You can edit any section after saving.</p>
+      <p className="text-sm text-slate-400 mb-4">Here&apos;s how your resume looks. You can edit any section after saving.</p>
       <div className="bg-white rounded-xl p-6 overflow-auto max-h-[600px]">
         <div dangerouslySetInnerHTML={{ __html: renderTemplate('classic', data) }} />
       </div>

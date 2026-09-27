@@ -1,8 +1,15 @@
+// src/app/api/linkedin/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { callLLM } from '@/lib/llm/client'
 import { LINKEDIN_PARSE_PROMPT } from '@/lib/llm/prompts'
 import type { BYOKCreds, ResumeData } from '@/types/resume'
+
+// Vercel's default Serverless Function timeout (10s on Hobby) is well
+// under what a slow LLM provider or a chained multi-call analysis action
+// can take. 60s is the max Hobby plan allows; Pro/Enterprise can go higher
+// if you configure a longer timeout for this route in Project Settings.
+export const maxDuration = 60
 
 function extractLinkedInText(html: string): string {
   return html
@@ -40,6 +47,7 @@ export async function POST(request: NextRequest) {
     if (body.rawText) {
       const parsed = await callLLM<ResumeData>({
         creds: body.creds,
+        cookieHeader: request.headers.get('cookie') ?? undefined,
         systemPrompt: LINKEDIN_PARSE_PROMPT,
         userPrompt: `LinkedIn profile text (manually pasted):\n\n${body.rawText.slice(0, 12000)}`,
       })
@@ -50,7 +58,15 @@ export async function POST(request: NextRequest) {
     if (!body.url?.trim()) return NextResponse.json({ error: 'URL or rawText is required' }, { status: 400 })
 
     const profileUrl = normalizeLinkedInUrl(body.url)
-    if (!profileUrl.includes('linkedin.com/in/')) {
+
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(profileUrl)
+    } catch {
+      return NextResponse.json({ error: 'Enter a valid LinkedIn profile URL (linkedin.com/in/username)' }, { status: 400 })
+    }
+    const isLinkedInHost = parsedUrl.hostname === 'www.linkedin.com' || parsedUrl.hostname === 'linkedin.com'
+    if (!isLinkedInHost || !parsedUrl.pathname.startsWith('/in/')) {
       return NextResponse.json({ error: 'Enter a valid LinkedIn profile URL (linkedin.com/in/username)' }, { status: 400 })
     }
 
@@ -91,6 +107,7 @@ export async function POST(request: NextRequest) {
 
     const parsed = await callLLM<ResumeData>({
       creds: body.creds,
+      cookieHeader: request.headers.get('cookie') ?? undefined,
       systemPrompt: LINKEDIN_PARSE_PROMPT,
       userPrompt: `LinkedIn profile URL: ${profileUrl}\n\nExtracted text:\n${rawText}`,
     })

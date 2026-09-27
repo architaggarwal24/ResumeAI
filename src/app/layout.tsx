@@ -1,10 +1,11 @@
+// src/app/layout.tsx
 import './globals.css'
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { StoreHydrator } from '@/components/ui/StoreHydrator'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'ResumeAI v3 — Resume Intelligence Platform',
+  title: 'ResumeAI — Resume Intelligence Platform',
   description: 'Upload your resume, get section-level scoring, inline editing, AI rewrites, ATS optimization, and template switching.',
 }
 

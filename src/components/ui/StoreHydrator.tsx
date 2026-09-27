@@ -1,3 +1,4 @@
+// src/components/ui/StoreHydrator.tsx
 'use client'
 import { useEffect } from 'react'
 import { useResumeStore } from '@/store/resumeStore'

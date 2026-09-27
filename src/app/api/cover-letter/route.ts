@@ -1,8 +1,15 @@
+// src/app/api/cover-letter/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { callLLM } from '@/lib/llm/client'
 import { COVER_LETTER_PROMPT } from '@/lib/llm/prompts'
 import type { BYOKCreds, ResumeData, CoverLetterTone } from '@/types/resume'
+
+// Vercel's default Serverless Function timeout (10s on Hobby) is well
+// under what a slow LLM provider or a chained multi-call analysis action
+// can take. 60s is the max Hobby plan allows; Pro/Enterprise can go higher
+// if you configure a longer timeout for this route in Project Settings.
+export const maxDuration = 60
 
 const TONE_INSTRUCTIONS: Record<CoverLetterTone, string> = {
   professional:  'Tone: formal, polished, confident. Appropriate for corporate/enterprise roles.',
@@ -34,6 +41,7 @@ export async function POST(request: NextRequest) {
 
     const result = await callLLM<{ content: string; subjectLine: string }>({
       creds: body.creds,
+      cookieHeader: request.headers.get('cookie') ?? undefined,
       systemPrompt: COVER_LETTER_PROMPT,
       userPrompt: `${toneInstruction}
 

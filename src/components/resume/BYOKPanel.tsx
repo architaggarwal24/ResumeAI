@@ -8,12 +8,14 @@ import { cn } from '@/lib/utils'
 import type { LLMProvider } from '@/types/resume'
 
 export function BYOKPanel() {
-  const { byokCreds, setProvider, setApiKey, setModel } = useResumeStore()
+  const { byokCreds, setProvider, setApiKey, setModel, setBaseUrl } = useResumeStore()
   const [showKey, setShowKey]         = useState(false)
   const [testing, setTesting]         = useState(false)
   const [testResult, setTestResult]   = useState<'ok' | 'fail' | null>(null)
   const [testError, setTestError]     = useState('')
   const [testLatency, setTestLatency] = useState<number | null>(null)
+  const [jsonResult, setJsonResult]   = useState<'ok' | 'fail' | null>(null)
+  const [jsonError, setJsonError]     = useState('')
   const [customModel, setCustomModel] = useState('')
   const [showCustom, setShowCustom]   = useState(false)
 
@@ -21,8 +23,8 @@ export function BYOKPanel() {
   const isCustomModel = !cfg.models.includes(byokCreds.model)
 
   async function testConnection() {
-    if (!byokCreds.apiKey) return
-    setTesting(true); setTestResult(null); setTestError(''); setTestLatency(null)
+    if (byokCreds.provider !== 'ollama' && !byokCreds.apiKey) return
+    setTesting(true); setTestResult(null); setTestError(''); setTestLatency(null); setJsonResult(null); setJsonError('')
     try {
       // Route through our API server to avoid CORS — browser can't call OpenRouter/NVIDIA directly
       const res = await fetch('/api/test-connection', {
@@ -30,10 +32,18 @@ export function BYOKPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(byokCreds),
       })
-      const data = await res.json() as { ok: boolean; error?: string; latencyMs?: number }
+      const data = await res.json() as {
+        ok: boolean; error?: string; latencyMs?: number
+        basic?: { ok: boolean; error?: string; latencyMs?: number }
+        json?: { ok: boolean; error?: string; latencyMs?: number } | null
+      }
       if (data.ok) {
         setTestResult('ok')
-        setTestLatency(data.latencyMs ?? null)
+        setTestLatency(data.basic?.latencyMs ?? data.latencyMs ?? null)
+        if (data.json) {
+          setJsonResult(data.json.ok ? 'ok' : 'fail')
+          if (!data.json.ok) setJsonError(data.json.error || 'JSON output not supported')
+        }
       } else {
         setTestResult('fail')
         setTestError(data.error || 'Connection failed')
@@ -48,6 +58,7 @@ export function BYOKPanel() {
   function handleProviderSwitch(p: LLMProvider) {
     setProvider(p)
     setTestResult(null); setTestError(''); setTestLatency(null)
+    setJsonResult(null); setJsonError('')
     setCustomModel(''); setShowCustom(false)
   }
 
@@ -82,23 +93,39 @@ export function BYOKPanel() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {/* API Key */}
+        {/* API Key / Server URL */}
         <div>
-          <Label>API Key</Label>
-          <div className="relative">
-            <input
-              type={showKey ? 'text' : 'password'}
-              value={byokCreds.apiKey}
-              onChange={e => { setApiKey(e.target.value); setTestResult(null); setTestError('') }}
-              placeholder={cfg.placeholder}
-              className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
-            />
-            <button onClick={() => setShowKey(v => !v)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-              {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-            </button>
-          </div>
-          <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
+          {byokCreds.provider === 'ollama' ? (
+            <>
+              <Label>Server URL</Label>
+              <input
+                type="text"
+                value={byokCreds.baseUrl ?? cfg.baseUrl ?? ''}
+                onChange={e => { setBaseUrl(e.target.value); setTestResult(null); setTestError('') }}
+                placeholder="http://localhost:11434/v1/chat/completions"
+                className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
+              />
+              <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
+            </>
+          ) : (
+            <>
+              <Label>API Key</Label>
+              <div className="relative">
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  value={byokCreds.apiKey}
+                  onChange={e => { setApiKey(e.target.value); setTestResult(null); setTestError('') }}
+                  placeholder={cfg.placeholder}
+                  className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
+                />
+                <button onClick={() => setShowKey(v => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                  {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+              <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
+            </>
+          )}
         </div>
 
         {/* Model + custom model */}
@@ -131,7 +158,7 @@ export function BYOKPanel() {
                 value={customModel}
                 onChange={e => setCustomModel(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && applyCustomModel()}
-                placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. meta/llama-3.1-70b-instruct' : 'model ID'}
+                placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. nvidia/nemotron-3-nano-30b-a3b' : byokCreds.provider === 'ollama' ? 'e.g. llama3.1:8b' : 'model ID'}
                 autoFocus
                 className="flex-1 bg-[#1c1c24] border border-violet-500/40 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/70"
               />
@@ -179,6 +206,16 @@ export function BYOKPanel() {
                 <XCircle size={12}/>Failed
               </span>
             )}
+            {jsonResult === 'ok' && (
+              <span className="flex items-center gap-1 text-xs text-emerald-400">
+                <CheckCircle size={12}/>JSON output OK
+              </span>
+            )}
+            {jsonResult === 'fail' && (
+              <span className="flex items-center gap-1 text-xs text-amber-400">
+                <AlertCircle size={12}/>JSON output unreliable
+              </span>
+            )}
           </div>
 
           {/* Error detail */}
@@ -186,6 +223,14 @@ export function BYOKPanel() {
             <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
               <AlertCircle size={12} className="text-red-400 mt-0.5 shrink-0"/>
               <p className="text-xs text-red-300 leading-snug">{testError}</p>
+            </div>
+          )}
+          {jsonResult === 'fail' && jsonError && (
+            <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0"/>
+              <p className="text-xs text-amber-300 leading-snug">
+                Connected, but this model didn&apos;t return valid JSON — scoring, suggestions, and the AI coach&apos;s edit proposals may fail. {jsonError}
+              </p>
             </div>
           )}
         </div>

@@ -1,3 +1,4 @@
+// src/app/s/[slug]/page.tsx
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { renderFullHTML } from '@/lib/templates/render'
@@ -8,22 +9,39 @@ export const dynamic = 'force-dynamic'
 
 type Props = { params: Promise<{ slug: string }> }
 
+type SharedResumeResult = {
+  found: boolean
+  expired?: boolean
+  requiresPassword?: boolean
+  unlocked?: boolean
+  parsedData?: ResumeData
+  templateId?: TemplateId
+  name?: string
+}
+
 export default async function SharePage({ params }: Props) {
   const { slug } = await params
 
-  // Use service-role-like anon client — no auth needed for public shares
   const supabase = await createClient()
 
-  const { data: share } = await supabase
-    .from('resume_shares')
-    .select('*, resumes(parsed_data, template_id, name)')
-    .eq('slug', slug)
-    .single()
+  // The only way this (anonymous) request reads share/resume data — see
+  // get_shared_resume() in supabase/migrations/002_secure_share_access.sql.
+  // Called with no password first: this returns metadata (found / expired /
+  // requiresPassword) but never resume content or the password hash when a
+  // password is required and hasn't been supplied yet. View-count increment
+  // and expiry checks happen inside the function itself.
+  const { data, error } = await supabase.rpc('get_shared_resume', { p_slug: slug, p_password: null })
 
-  if (!share) notFound()
+  if (error) {
+    console.error('[SharePage]', error)
+    notFound()
+  }
+
+  const result = data as SharedResumeResult | null
+  if (!result?.found) notFound()
 
   // Check expiry
-  if (share.expires_at && new Date(share.expires_at) < new Date()) {
+  if (result.expired) {
     return (
       <div className="min-h-screen bg-[#0c0c0f] flex items-center justify-center p-8">
         <div className="text-center">
@@ -35,20 +53,15 @@ export default async function SharePage({ params }: Props) {
     )
   }
 
-  // Increment view count (fire-and-forget)
-  supabase
-    .from('resume_shares')
-    .update({ view_count: (share.view_count ?? 0) + 1 })
-    .eq('slug', slug)
-    .then(() => {})
-
-  // Password protected — show gate
-  if (share.password_hash) {
-    return <SharePasswordGate slug={slug} passwordHash={share.password_hash} share={share} />
+  // Password protected and not yet unlocked — render ONLY the password
+  // form. No resume data and no password hash reach the client at this
+  // point (compare to the old implementation, which sent both as props to
+  // a 'use client' component before the password was ever checked).
+  if (result.requiresPassword && !result.unlocked) {
+    return <SharePasswordGate slug={slug} />
   }
 
-  const resume = share.resumes as unknown as { parsed_data: ResumeData; template_id: TemplateId; name: string }
-  const html   = renderFullHTML(resume.template_id ?? 'classic', resume.parsed_data)
+  const html = renderFullHTML(result.templateId ?? 'classic', result.parsedData as ResumeData)
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
@@ -60,7 +73,7 @@ export default async function SharePage({ params }: Props) {
           <span className="text-xs text-gray-400">· Shared Resume</span>
         </div>
         <div className="flex items-center gap-3">
-          {resume.name && <span className="text-sm text-gray-500">{resume.name}</span>}
+          {result.name && <span className="text-sm text-gray-500">{result.name}</span>}
           <button
             onClick={() => window.print()}
             className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"

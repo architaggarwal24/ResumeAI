@@ -1,3 +1,4 @@
+// src/app/api/resume/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { ResumeData, TemplateId } from '@/types/resume'

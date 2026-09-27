@@ -1,13 +1,10 @@
+// src/app/api/share/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createHash, randomBytes } from 'crypto'
+import { randomBytes } from 'crypto'
 
 function generateSlug(): string {
   return randomBytes(6).toString('base64url')
-}
-
-function hashPassword(pw: string): string {
-  return createHash('sha256').update(pw + process.env.NEXT_PUBLIC_SUPABASE_URL).digest('hex')
 }
 
 // GET /api/share?resumeId=xxx — get existing shares for a resume
@@ -38,7 +35,7 @@ export async function GET(request: NextRequest) {
     }))
 
     return NextResponse.json({ shares })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch shares' }, { status: 500 })
   }
 }
@@ -63,8 +60,21 @@ export async function POST(request: NextRequest) {
       .from('resumes').select('id').eq('id', body.resumeId).eq('user_id', user.id).single()
     if (!resume) return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
 
-    const slug         = generateSlug()
-    const passwordHash = body.password ? hashPassword(body.password) : null
+    const slug = generateSlug()
+
+    // Bcrypt via Postgres pgcrypto (supabase/migrations/002_secure_share_access.sql) —
+    // replaces the old unsalted SHA-256 + NEXT_PUBLIC_ "pepper", which shipped to
+    // the browser and therefore wasn't a secret at all.
+    let passwordHash: string | null = null
+    if (body.password) {
+      const { data: hash, error: hashError } = await supabase.rpc('hash_share_password', { p_password: body.password })
+      if (hashError || typeof hash !== 'string') {
+        console.error('[POST /api/share] hash_share_password failed:', hashError)
+        return NextResponse.json({ error: 'Failed to create share' }, { status: 500 })
+      }
+      passwordHash = hash
+    }
+
     const expiresAt    = body.expiresInDays
       ? new Date(Date.now() + body.expiresInDays * 86400 * 1000).toISOString()
       : null
@@ -98,7 +108,7 @@ export async function DELETE(request: NextRequest) {
 
     await supabase.from('resume_shares').delete().eq('id', id).eq('user_id', user.id)
     return NextResponse.json({ success: true })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to revoke share' }, { status: 500 })
   }
 }

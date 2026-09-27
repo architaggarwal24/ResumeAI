@@ -1,5 +1,6 @@
+// src/components/resume/ProviderStatusBar.tsx
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useResumeStore, getStoredKey } from '@/store/resumeStore'
 import { PROVIDERS } from '@/lib/llm/client'
 import { CheckCircle, XCircle, AlertCircle, Loader2, Settings } from 'lucide-react'
@@ -12,17 +13,6 @@ export function ProviderStatusBar() {
   const [testing, setTesting]       = useState(false)
   const [testResult, setTestResult] = useState<'ok' | 'fail' | null>(null)
   const [testError, setTestError]   = useState('')
-  const [savedKeys, setSavedKeys]   = useState<Partial<Record<LLMProvider, boolean>>>({})
-
-  // Load which providers have keys after hydration
-  useEffect(() => {
-    if (!hydrated) return
-    const keys: Partial<Record<LLMProvider, boolean>> = {}
-    ;(Object.keys(PROVIDERS) as LLMProvider[]).forEach(id => {
-      keys[id] = !!getStoredKey(id)
-    })
-    setSavedKeys(keys)
-  }, [hydrated, byokCreds.provider, byokCreds.apiKey])
 
   async function testConnection() {
     if (!byokCreds.apiKey) return
@@ -47,6 +37,13 @@ export function ProviderStatusBar() {
 
   if (!hydrated) return null
 
+  // Derived directly from sessionStorage on every render — getStoredKey() is
+  // synchronous, so this needs neither state nor an effect. The `hydrated`
+  // guard above already keeps this from running during SSR.
+  const savedKeys: Partial<Record<LLMProvider, boolean>> = {}
+  ;(Object.keys(PROVIDERS) as LLMProvider[]).forEach(id => {
+    savedKeys[id] = !!getStoredKey(id)
+  })
   const anyKeySaved = Object.values(savedKeys).some(Boolean)
 
   return (
@@ -99,6 +96,9 @@ export function ProviderStatusBar() {
               <span className="text-slate-300 text-xs">
                 Using <span className="font-medium text-slate-200">{PROVIDERS[byokCreds.provider].name}</span>
                 <span className="text-slate-500 ml-2 font-mono">{byokCreds.model}</span>
+                {byokCreds.provider === 'ollama' && (
+                  <span className="text-slate-600 ml-2 font-mono">@ {byokCreds.baseUrl || PROVIDERS.ollama.baseUrl}</span>
+                )}
               </span>
             </div>
 
@@ -142,7 +142,7 @@ export function ProviderStatusBar() {
             <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0"/>
             <p className="text-xs text-amber-300">
               <strong>{byokCreds.model}</strong> doesn&apos;t look like a valid {PROVIDERS[byokCreds.provider].name} model ID.
-              {byokCreds.provider === 'nvidia' && ' NVIDIA NIM format: provider/model-name e.g. meta/llama-3.1-8b-instruct'}
+              {byokCreds.provider === 'nvidia' && ' NVIDIA NIM format: provider/model-name e.g. nvidia/nemotron-3-nano-30b-a3b'}
               {byokCreds.provider === 'openrouter' && ' OpenRouter format: provider/model-name e.g. meta-llama/llama-3.1-8b-instruct:free'}
             </p>
           </div>

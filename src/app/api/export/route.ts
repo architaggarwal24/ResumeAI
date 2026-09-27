@@ -1,6 +1,7 @@
+// src/app/api/export/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { renderFullHTML } from '@/lib/templates/render'
+import { buildResumePdf } from '@/lib/pdf/generate'
 import type { ResumeData, TemplateId } from '@/types/resume'
 
 export async function POST(request: NextRequest) {
@@ -12,35 +13,38 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as {
       resumeData: ResumeData
       templateId: TemplateId
-      format: 'html' | 'docx' | 'txt'
+      format: 'pdf' | 'docx' | 'latex'
     }
 
     if (!body.resumeData || !body.templateId) {
       return NextResponse.json({ error: 'resumeData and templateId required' }, { status: 400 })
     }
 
-    const format   = body.format || 'html'
+    const format   = body.format || 'pdf'
     const safeName = (body.resumeData.name || 'resume').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
 
-    // ── HTML export ────────────────────────────────────────────────────────────
-    if (format === 'html') {
-      const html = renderFullHTML(body.templateId, body.resumeData)
-      return new Response(html, {
+    // ── PDF export ──────────────────────────────────────────────────────────────
+    // Pure-JS layout via @react-pdf/renderer (src/lib/pdf/generate.tsx) — not a
+    // browser screenshot of the HTML template, so it doesn't need a headless
+    // Chromium binary that wouldn't run on a Windows dev machine anyway.
+    if (format === 'pdf') {
+      const pdf = await buildResumePdf(body.resumeData)
+      return new Response(new Uint8Array(pdf), {
         headers: {
-          'Content-Type':        'text/html; charset=utf-8',
-          'Content-Disposition': `attachment; filename="${safeName}.html"`,
+          'Content-Type':        'application/pdf',
+          'Content-Disposition': `attachment; filename="${safeName}.pdf"`,
           'Cache-Control':       'no-store',
         },
       })
     }
 
-    // ── Plain text export ──────────────────────────────────────────────────────
-    if (format === 'txt') {
-      const txt = buildPlainText(body.resumeData)
-      return new Response(txt, {
+    // ── LaTeX export ────────────────────────────────────────────────────────────
+    if (format === 'latex') {
+      const tex = buildLatex(body.resumeData)
+      return new Response(tex, {
         headers: {
-          'Content-Type':        'text/plain; charset=utf-8',
-          'Content-Disposition': `attachment; filename="${safeName}.txt"`,
+          'Content-Type':        'application/x-tex; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${safeName}.tex"`,
           'Cache-Control':       'no-store',
         },
       })
@@ -65,56 +69,98 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ── Plain text builder ─────────────────────────────────────────────────────────
-function buildPlainText(d: ResumeData): string {
-  const lines: string[] = []
-  const sep = '─'.repeat(60)
+// ── LaTeX builder ────────────────────────────────────────────────────────────────
+// Escapes LaTeX's special characters — without this, a resume bullet like
+// "cut costs by 30% using R&D data" would fail to compile (% starts a comment,
+// & is a table column separator). Order matters: backslash must be escaped
+// before the replacements that introduce new literal backslashes.
+function texEscape(s: string): string {
+  if (!s) return ''
+  return s
+    .replace(/\\/g, '\\textbackslash{}')
+    .replace(/([&%$#_{}])/g, '\\$1')
+    .replace(/~/g, '\\textasciitilde{}')
+    .replace(/\^/g, '\\textasciicircum{}')
+}
 
-  lines.push(d.name || '')
-  lines.push([d.email, d.phone, d.location].filter(Boolean).join(' | '))
-  if (d.linkedin) lines.push(d.linkedin)
+// Produces a self-contained .tex file that compiles with only geometry,
+// enumitem and fontenc — all part of any standard TeX Live/MiKTeX install
+// and Overleaf's default template, so it compiles with no extra setup.
+function buildLatex(d: ResumeData): string {
+  const t = texEscape
+  const lines: string[] = []
+
+  lines.push('\\documentclass[10pt,letterpaper]{article}')
+  lines.push('\\usepackage[margin=0.75in]{geometry}')
+  lines.push('\\usepackage{enumitem}')
+  lines.push('\\usepackage[T1]{fontenc}')
+  lines.push('\\pagestyle{empty}')
+  lines.push('\\setlength{\\parindent}{0pt}')
+  lines.push('\\newcommand{\\sectionhead}[1]{\\vspace{8pt}{\\large\\bfseries #1}\\\\[-4pt]\\hrule\\vspace{4pt}}')
+  lines.push('')
+  lines.push('\\begin{document}')
+  lines.push('')
+
+  lines.push(`{\\LARGE \\textbf{${t(d.name)}}}\\\\[2pt]`)
+  const contact = [d.email, d.phone, d.location, d.linkedin].filter(Boolean).map(t).join(' \\quad|\\quad ')
+  if (contact) lines.push(`${contact}\\\\`)
   lines.push('')
 
   if (d.summary) {
-    lines.push('SUMMARY'); lines.push(sep); lines.push(d.summary); lines.push('')
+    lines.push('\\sectionhead{Summary}')
+    lines.push(t(d.summary))
+    lines.push('')
   }
 
   if (d.experience?.length) {
-    lines.push('EXPERIENCE'); lines.push(sep)
+    lines.push('\\sectionhead{Experience}')
     for (const exp of d.experience) {
-      lines.push(`${exp.title} — ${exp.company}${exp.location ? ', ' + exp.location : ''}`)
-      lines.push(exp.dates || '')
-      for (const b of (exp.bullets || [])) lines.push(`  • ${b.text}`)
-      lines.push('')
+      lines.push(`\\textbf{${t(exp.title)}}${exp.company ? ' --- ' + t(exp.company) : ''} \\hfill ${t(exp.dates)}\\\\`)
+      if (exp.location) lines.push(`\\textit{${t(exp.location)}}\\\\`)
+      const bullets = exp.bullets || []
+      if (bullets.length) {
+        lines.push('\\begin{itemize}[leftmargin=1.2em, itemsep=1pt, topsep=2pt]')
+        for (const b of bullets) lines.push(`  \\item ${t(b.text)}`)
+        lines.push('\\end{itemize}')
+      }
+      lines.push('\\vspace{4pt}')
     }
   }
 
   if (d.education?.length) {
-    lines.push('EDUCATION'); lines.push(sep)
+    lines.push('\\sectionhead{Education}')
     for (const edu of d.education) {
-      lines.push(`${edu.institution} — ${edu.degree}${edu.field ? ', ' + edu.field : ''}`)
-      lines.push(edu.dates || '')
-      lines.push('')
+      const degreeLine = [edu.degree, edu.field].filter(Boolean).join(', ')
+      lines.push(`\\textbf{${t(edu.institution)}}${degreeLine ? ' --- ' + t(degreeLine) : ''}${edu.gpa ? ' (GPA ' + t(edu.gpa) + ')' : ''} \\hfill ${t(edu.dates)}\\\\`)
     }
+    lines.push('\\vspace{2pt}')
   }
 
   if (d.skills?.categories?.length) {
-    lines.push('SKILLS'); lines.push(sep)
+    lines.push('\\sectionhead{Skills}')
     for (const cat of d.skills.categories) {
-      lines.push(`${cat.name}: ${cat.items.join(', ')}`)
+      lines.push(`\\textbf{${t(cat.name)}:} ${t(cat.items.join(', '))}\\\\`)
     }
-    lines.push('')
   }
 
   if (d.projects?.length) {
-    lines.push('PROJECTS'); lines.push(sep)
+    lines.push('\\sectionhead{Projects}')
     for (const p of d.projects) {
-      lines.push(`${p.name}${p.tech ? ' — ' + p.tech : ''}`)
-      if (p.description) lines.push(p.description)
-      for (const b of (p.bullets || [])) lines.push(`  • ${b.text}`)
-      lines.push('')
+      lines.push(`\\textbf{${t(p.name)}}${p.tech ? ' --- ' + t(p.tech) : ''}\\\\`)
+      if (p.description) lines.push(`${t(p.description)}\\\\`)
+      const bullets = p.bullets || []
+      if (bullets.length) {
+        lines.push('\\begin{itemize}[leftmargin=1.2em, itemsep=1pt, topsep=2pt]')
+        for (const b of bullets) lines.push(`  \\item ${t(b.text)}`)
+        lines.push('\\end{itemize}')
+      }
+      lines.push('\\vspace{4pt}')
     }
   }
+
+  lines.push('')
+  lines.push('\\end{document}')
+  lines.push('')
 
   return lines.join('\n')
 }

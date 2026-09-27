@@ -1,8 +1,9 @@
+// src/app/(app)/jobs/page.tsx
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn, formatDate } from '@/lib/utils'
-import { Briefcase, Plus, X, ExternalLink, ChevronDown, DollarSign, MapPin, Calendar, FileText, Loader2, GripVertical, MoreHorizontal, Trash2, Edit2, Wand2, MessageSquare } from 'lucide-react'
+import { Briefcase, Plus, X, ExternalLink, ChevronDown, DollarSign, MapPin, Calendar, FileText, GripVertical, MoreHorizontal, Trash2, Edit2, Wand2, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/primitives'
 import { useResumeStore } from '@/store/resumeStore'
 import type { JobStatus, JobApplicationRow } from '@/types/resume'

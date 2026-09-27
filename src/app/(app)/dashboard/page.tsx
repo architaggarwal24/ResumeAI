@@ -1,8 +1,9 @@
+// src/app/(app)/dashboard/page.tsx
 export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { formatDate, scoreColor, cn } from '@/lib/utils'
-import { FileText, Plus, Trash2, ChevronRight, Sparkles } from 'lucide-react'
+import { FileText, Plus } from 'lucide-react'
 import { DeleteResumeButton } from '@/components/resume/DeleteResumeButton'
 
 export default async function DashboardPage() {

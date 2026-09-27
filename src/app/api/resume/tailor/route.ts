@@ -1,8 +1,15 @@
+// src/app/api/resume/tailor/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { callLLM } from '@/lib/llm/client'
 import { TAILOR_PROMPT } from '@/lib/llm/prompts'
 import type { BYOKCreds, ResumeData } from '@/types/resume'
+
+// Vercel's default Serverless Function timeout (10s on Hobby) is well
+// under what a slow LLM provider or a chained multi-call analysis action
+// can take. 60s is the max Hobby plan allows; Pro/Enterprise can go higher
+// if you configure a longer timeout for this route in Project Settings.
+export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +43,7 @@ export async function POST(request: NextRequest) {
     // Tailor with LLM
     const tailored = await callLLM<ResumeData>({
       creds: body.creds,
+      cookieHeader: request.headers.get('cookie') ?? undefined,
       systemPrompt: TAILOR_PROMPT,
       userPrompt: `Job Description:\n${body.jobDescription}\n\nBase Resume:\n${JSON.stringify(source.parsed_data, null, 2)}`,
     })

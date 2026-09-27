@@ -1,3 +1,4 @@
+// src/components/ui/primitives.tsx
 import { cn, strengthColor } from '@/lib/utils'
 import type { Strength } from '@/types/resume'
 import { Loader2 } from 'lucide-react'

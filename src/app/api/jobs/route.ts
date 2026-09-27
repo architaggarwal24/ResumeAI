@@ -1,3 +1,4 @@
+// src/app/api/jobs/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { JobStatus } from '@/types/resume'
@@ -16,7 +17,7 @@ export async function GET() {
 
     if (error) throw error
     return NextResponse.json({ jobs: data ?? [] })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 })
   }
 }
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
     return NextResponse.json({ job: data }, { status: 201 })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to create job' }, { status: 500 })
   }
 }

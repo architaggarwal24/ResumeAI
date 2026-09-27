@@ -1,7 +1,8 @@
+// src/components/resume/ShareManager.tsx
 'use client'
 import { useState, useEffect } from 'react'
 import { Link2, Copy, Trash2, Plus, Eye, Lock, Calendar, Loader2, Check } from 'lucide-react'
-import { Button, Card, CardSm } from '@/components/ui/primitives'
+import { Button, Card } from '@/components/ui/primitives'
 import { cn, formatDate } from '@/lib/utils'
 
 interface Share {

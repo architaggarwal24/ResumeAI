@@ -1,3 +1,4 @@
+// src/types/resume.ts
 // ─── Resume Data ──────────────────────────────────────────────────────────────
 
 export interface Bullet {
@@ -95,6 +96,22 @@ export interface AnalysisResult {
   }
   missingKeywords: string[]
   topWins: string[]
+  // Diagnoser: ranked top 5 fixes with before/after rewrites
+  topFixes: TopFix[]
+  // Recruiter: buzzwords in the resume to cut, and trending skills missing from it
+  buzzwordsToRemove: string[]
+  trendingSkills: string[]
+}
+
+// One ranked fix from the ATS diagnoser — with the actual current line quoted
+// and a concrete rewrite ready to apply
+export interface TopFix {
+  rank: number
+  section: string
+  problem: string   // what's wrong, quoting the actual resume text
+  before: string    // the exact current text
+  after: string     // the improved replacement (XYZ formula where applicable)
+  impact: 'high' | 'medium' | 'low'
 }
 
 // ─── ATS / Suggestions ────────────────────────────────────────────────────────
@@ -130,6 +147,35 @@ export interface ATSResult {
   }
   suggestions: Suggestion[]
   missingKeywords: string[]
+}
+
+// ─── Pointer Suggestions (per-bullet, Score tab) ─────────────────────────────
+
+export interface PointerSuggestionResult {
+  suggested: string
+  reason: string
+}
+
+// ─── Generate section (Score tab — empty section) ────────────────────────────
+
+export type GeneratableSection = 'summary' | 'experience' | 'education' | 'projects' | 'skills'
+
+export interface GenerateSectionResult {
+  summary?: string
+  experience?: Array<{ title: string; company: string; location: string; dates: string; bullets: string[] }>
+  education?: Array<{ institution: string; degree: string; field: string; dates: string; gpa: string }>
+  projects?: Array<{ name: string; tech: string; description: string; bullets: string[] }>
+  skills?: { categories: Array<{ name: string; items: string[] }> }
+  note: string | null
+}
+
+// Section-wide "improve this" suggestion for non-empty sections without
+// individual bullet pointers (Skills, Education) — returns the full revised
+// section content plus reasoning/ATS impact, mirroring PointerSuggestionResult.
+export interface SectionImproveResult {
+  education?: Array<{ institution: string; degree: string; field: string; dates: string; gpa: string; notes: string }>
+  skills?: { categories: Array<{ name: string; items: string[] }> }
+  reason: string
 }
 
 // ─── Cover Letter ─────────────────────────────────────────────────────────────
@@ -189,7 +235,7 @@ export interface UserRow {
 
 // ─── LLM / BYOK ───────────────────────────────────────────────────────────────
 
-export type LLMProvider = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'nvidia'
+export type LLMProvider = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'nvidia' | 'ollama'
 
 // Per-provider credentials stored separately so switching tabs doesn't wipe keys
 export type PerProviderKeys = Partial<Record<LLMProvider, string>>
@@ -198,6 +244,9 @@ export interface BYOKCreds {
   provider: LLMProvider
   apiKey: string
   model: string
+  // Optional override for the provider's API base URL — used by Ollama
+  // to point at a local or remote Ollama server (default http://localhost:11434)
+  baseUrl?: string
 }
 
 export interface LLMOptions {
@@ -205,6 +254,18 @@ export interface LLMOptions {
   systemPrompt: string
   userPrompt: string
   signal?: AbortSignal
+  // Cap output tokens for this call — defaults to 4096 in /api/llm if omitted.
+  // Smaller values reduce worst-case generation latency for short-JSON responses.
+  maxTokens?: number
+  // Sampling temperature — defaults to 0 (deterministic) in /api/llm if omitted.
+  // A small non-zero value (e.g. 0.4) helps numeric-scoring prompts avoid
+  // mode-collapse onto a handful of "favorite" scores at temp=0.
+  temperature?: number
+  // Server-side callers only: forward the caller's session cookie (from
+  // request.headers.get('cookie')) so the internal call to /api/llm passes
+  // its auth check. Ignored/unnecessary in the browser, where the same-origin
+  // fetch to /api/llm already carries cookies automatically.
+  cookieHeader?: string
 }
 
 // ─── Templates ────────────────────────────────────────────────────────────────
@@ -220,7 +281,32 @@ export interface Template {
 
 // ─── UI State ─────────────────────────────────────────────────────────────────
 
-export type ResumeTab = 'score' | 'editor' | 'ats' | 'templates' | 'cover-letter' | 'history' | 'share'
+export type ResumeTab = 'score' | 'editor' | 'ats' | 'templates' | 'cover-letter' | 'history' | 'share' | 'interview'
+
+// ─── Mock Interview ───────────────────────────────────────────────────────────
+
+export type InterviewRound = 'technical' | 'behavioural' | 'debrief'
+export type InterviewRole = 'interviewer' | 'candidate' | 'system'
+
+export interface InterviewMessage {
+  id: string
+  role: InterviewRole
+  content: string
+  round?: InterviewRound
+  // Rating for candidate answers (1-10)
+  rating?: number
+  // Interviewer's coaching note after rating
+  coachNote?: string
+}
+
+export interface MockInterviewDebrief {
+  hireabilityScore: number
+  verdict: 'strong_yes' | 'yes' | 'maybe' | 'no'
+  verdictReason: string
+  weakestAnswers: Array<{ question: string; issue: string; betterAnswer: string }>
+  questionsToRehearse: string[]
+  studyPlan: string[]
+}
 
 export type ToastType = 'success' | 'error' | 'info' | 'loading'
 
@@ -346,6 +432,21 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   createdAt: string
+}
+
+// ─── Chat-proposed resume edits (AI Coach apply/deny) ────────────────────────
+
+export type ProposedEditStatus = 'pending' | 'applied' | 'denied'
+
+export interface ProposedEdit {
+  id: string
+  targetId: string
+  section: string
+  label: string
+  original: string
+  suggested: string
+  reason: string
+  status: ProposedEditStatus
 }
 
 // ─── Job Tracker (M12) ───────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+// src/app/api/jobs/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { JobStatus } from '@/types/resume'
@@ -42,7 +43,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     if (error || !data) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     return NextResponse.json({ job: data })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to update job' }, { status: 500 })
   }
 }
@@ -58,7 +59,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       .from('job_applications').delete().eq('id', id).eq('user_id', user.id)
     if (error) throw error
     return NextResponse.json({ success: true })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to delete job' }, { status: 500 })
   }
 }

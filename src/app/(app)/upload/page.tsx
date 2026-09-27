@@ -1,3 +1,4 @@
+// src/app/(app)/upload/page.tsx
 'use client'
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -49,8 +50,10 @@ export default function UploadPage() {
 
   // Elapsed timer — starts when parsing begins
   useEffect(() => {
+    // Resets deferred (not called synchronously from the effect body) — see
+    // react-hooks/set-state-in-effect.
     if (step === 'parsing') {
-      setElapsed(0); setSlowWarn(false)
+      queueMicrotask(() => { setElapsed(0); setSlowWarn(false) })
       timerRef.current = setInterval(() => {
         setElapsed(p => {
           const next = p + 1
@@ -60,7 +63,7 @@ export default function UploadPage() {
       }, 1000)
     } else {
       if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
-      setElapsed(0); setSlowWarn(false)
+      queueMicrotask(() => { setElapsed(0); setSlowWarn(false) })
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [step])
@@ -104,7 +107,6 @@ export default function UploadPage() {
 
       // Use fast model for parsing — no need for reasoning models for extraction
       const parseCreds = getFastCreds(byokCreds)
-      const usingFastModel = parseCreds.model !== byokCreds.model
       const parsed = await callLLM<ResumeData>({
         creds: parseCreds,
         systemPrompt: PARSE_PROMPT,
@@ -327,7 +329,7 @@ export default function UploadPage() {
                   {isLIProcessing ? liStepLabel[liStep] : 'Import'}
                 </Button>
               </div>
-              <p className="text-xs text-slate-600 mb-2">The profile must be public. If blocked, we'll switch to paste mode automatically.</p>
+              <p className="text-xs text-slate-600 mb-2">The profile must be public. If blocked, we&apos;ll switch to paste mode automatically.</p>
               <button onClick={() => setShowPaste(true)} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1">
                 <Clipboard size={12}/> Use manual paste instead
               </button>

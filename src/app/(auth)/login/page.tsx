@@ -1,3 +1,4 @@
+// src/app/(auth)/login/page.tsx
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -38,7 +39,6 @@ export default function LoginPage() {
           <div className="inline-flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-violet-500 shadow-lg shadow-violet-500/50" />
             <span className="font-bold text-xl tracking-tight">ResumeAI</span>
-            <span className="text-slate-500 text-sm font-normal">v3</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-100 mb-1">Welcome back</h1>
           <p className="text-slate-400 text-sm">Sign in to your account</p>

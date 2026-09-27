@@ -1,3 +1,4 @@
+// src/components/layout/AppShell.tsx
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -37,7 +38,6 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
         <div className="flex items-center gap-2 px-4 h-14 border-b border-white/7 shrink-0">
           <div className="w-2 h-2 rounded-full bg-violet-500 shadow-lg shadow-violet-500/50" />
           <span className="font-bold tracking-tight">ResumeAI</span>
-          <span className="text-slate-500 text-xs">v3</span>
         </div>
 
         {/* Search hint */}

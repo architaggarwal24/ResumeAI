@@ -1,8 +1,15 @@
+// src/app/api/interview/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { callLLM } from '@/lib/llm/client'
 import { INTERVIEW_PREP_PROMPT } from '@/lib/llm/prompts'
 import type { BYOKCreds, InterviewPrepResult } from '@/types/resume'
+
+// Vercel's default Serverless Function timeout (10s on Hobby) is well
+// under what a slow LLM provider or a chained multi-call analysis action
+// can take. 60s is the max Hobby plan allows; Pro/Enterprise can go higher
+// if you configure a longer timeout for this route in Project Settings.
+export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,6 +37,7 @@ export async function POST(request: NextRequest) {
 
     const result = await callLLM<InterviewPrepResult>({
       creds: body.creds,
+      cookieHeader: request.headers.get('cookie') ?? undefined,
       systemPrompt: INTERVIEW_PREP_PROMPT,
       userPrompt: `Company: ${body.company || 'Unknown'}\nRole: ${body.role || 'Unknown'}\n\nJob Description:\n${body.jobDescription}\n\nResume:\n${JSON.stringify(resume.parsed_data, null, 2)}`,
     })

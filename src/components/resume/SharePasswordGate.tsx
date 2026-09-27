@@ -1,42 +1,47 @@
+// src/components/resume/SharePasswordGate.tsx
 'use client'
 import { useState } from 'react'
-import { createHash } from 'crypto'
 import { Lock } from 'lucide-react'
 import { renderFullHTML } from '@/lib/templates/render'
 import type { ResumeData, TemplateId } from '@/types/resume'
 
-interface ShareRow {
-  slug: string
-  password_hash: string
-  resumes: unknown
-}
+type UnlockedResume = { parsedData: ResumeData; templateId: TemplateId; name: string }
 
-function hashPassword(pw: string, salt: string): string {
-  return createHash('sha256').update(pw + salt).digest('hex')
-}
+// Receives ONLY the slug — no resume content, no password hash. Password
+// verification happens server-side via POST /api/share/unlock, which itself
+// calls the get_shared_resume() Postgres function. Resume content only ever
+// reaches this component in the fetch response after a correct password.
+export function SharePasswordGate({ slug }: { slug: string }) {
+  const [pw, setPw]         = useState('')
+  const [error, setError]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const [resume, setResume] = useState<UnlockedResume | null>(null)
 
-export function SharePasswordGate({ slug, passwordHash, share }: {
-  slug: string
-  passwordHash: string
-  share: ShareRow & { resumes: { parsed_data: ResumeData; template_id: TemplateId; name: string } | null }
-}) {
-  const [pw, setPw]           = useState('')
-  const [error, setError]     = useState('')
-  const [unlocked, setUnlocked] = useState(false)
-
-  function verify() {
-    // We use the Supabase URL as salt (same as server-side)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-    const hash = createHash('sha256').update(pw + supabaseUrl).digest('hex')
-    if (hash === passwordHash) {
-      setUnlocked(true); setError('')
-    } else {
-      setError('Incorrect password')
+  async function verify() {
+    if (!pw || loading) return
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/share/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, password: pw }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.unlocked) {
+        setError(data.error || 'Incorrect password')
+        return
+      }
+      setResume({ parsedData: data.parsedData, templateId: data.templateId, name: data.name })
+    } catch {
+      setError('Something went wrong — try again')
+    } finally {
+      setLoading(false)
     }
   }
 
-  if (unlocked && share.resumes) {
-    const html = renderFullHTML(share.resumes.template_id ?? 'classic', share.resumes.parsed_data)
+  if (resume) {
+    const html = renderFullHTML(resume.templateId ?? 'classic', resume.parsedData)
     return (
       <div className="min-h-screen bg-[#f5f5f7]">
         <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-black/10 px-6 py-3 flex items-center justify-between">
@@ -72,14 +77,16 @@ export function SharePasswordGate({ slug, passwordHash, share }: {
             placeholder="Enter password"
             onKeyDown={e => e.key === 'Enter' && verify()}
             autoFocus
+            disabled={loading}
             className="w-full bg-[#16161d] border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
           />
           {error && <p className="text-sm text-red-400 text-center">{error}</p>}
           <button
             onClick={verify}
-            className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-all"
+            disabled={loading}
+            className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-all disabled:opacity-60"
           >
-            Unlock
+            {loading ? 'Checking…' : 'Unlock'}
           </button>
         </div>
       </div>

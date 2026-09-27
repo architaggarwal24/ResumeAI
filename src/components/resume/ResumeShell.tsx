@@ -1,3 +1,4 @@
+// src/components/resume/ResumeShell.tsx
 'use client'
 import { useEffect } from 'react'
 import { useResumeStore } from '@/store/resumeStore'
@@ -8,16 +9,18 @@ import { TemplatesTab }   from './TemplatesTab'
 import { CoverLetterTab } from './CoverLetterTab'
 import { HistoryTab }     from './HistoryTab'
 import { ShareManager }   from './ShareManager'
+import { InterviewTab }   from './InterviewTab'
 import { ChatDrawer }     from '@/components/chat/ChatDrawer'
 import { cn }             from '@/lib/utils'
 import type { ResumeRow, AnalysisResult, ResumeTab } from '@/types/resume'
-import { BarChart2, Edit3, Zap, Layout, FileText, History, Link2, ChevronLeft } from 'lucide-react'
+import { BarChart2, Edit3, Zap, Layout, FileText, History, Link2, ChevronLeft, BriefcaseIcon } from 'lucide-react'
 import Link from 'next/link'
 
 const TABS: { id: ResumeTab; label: string; icon: React.ReactNode }[] = [
   { id: 'score',        label: 'Score',        icon: <BarChart2 size={14}/> },
   { id: 'editor',       label: 'Edit',         icon: <Edit3     size={14}/> },
   { id: 'ats',          label: 'ATS vs JD',    icon: <Zap       size={14}/> },
+  { id: 'interview',    label: 'Interview',    icon: <BriefcaseIcon size={14}/> },
   { id: 'templates',    label: 'Templates',    icon: <Layout    size={14}/> },
   { id: 'cover-letter', label: 'Cover Letter', icon: <FileText  size={14}/> },
   { id: 'history',      label: 'History',      icon: <History   size={14}/> },
@@ -72,11 +75,12 @@ export function ResumeShell({ resume, initialAnalysis }: Props) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="fade-in">
+      <div className={cn('flex-1 overflow-y-auto', activeTab === 'interview' && 'overflow-hidden flex flex-col')}>
+        <div className={cn('fade-in', activeTab === 'interview' && 'h-full flex flex-col')}>
           {activeTab === 'score'        && <ScoreTab       resumeId={resume.id}/>}
           {activeTab === 'editor'       && <EditorTab      resumeId={resume.id}/>}
           {activeTab === 'ats'          && <ATSTab         resumeId={resume.id}/>}
+          {activeTab === 'interview'    && <InterviewTab/>}
           {activeTab === 'templates'    && <TemplatesTab   resumeId={resume.id}/>}
           {activeTab === 'cover-letter' && <CoverLetterTab resumeId={resume.id}/>}
           {activeTab === 'history'      && <HistoryTab     resumeId={resume.id}/>}

@@ -1,3 +1,4 @@
+// src/app/(app)/resume/[id]/page.tsx
 export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'

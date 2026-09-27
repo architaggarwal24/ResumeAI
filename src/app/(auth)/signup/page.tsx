@@ -1,13 +1,12 @@
+// src/app/(auth)/signup/page.tsx
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/primitives'
 import { Mail, Lock, Globe } from 'lucide-react'
 
 export default function SignupPage() {
-  const router   = useRouter()
   const supabase = createClient()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -52,7 +51,6 @@ export default function SignupPage() {
           <div className="inline-flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-violet-500 shadow-lg shadow-violet-500/50" />
             <span className="font-bold text-xl tracking-tight">ResumeAI</span>
-            <span className="text-slate-500 text-sm font-normal">v3</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-100 mb-1">Create account</h1>
           <p className="text-slate-400 text-sm">Free forever · BYOK</p>

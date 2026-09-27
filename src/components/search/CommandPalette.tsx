@@ -1,3 +1,4 @@
+// src/components/search/CommandPalette.tsx
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -30,7 +31,12 @@ export function CommandPalette() {
 
   // Focus input when opened
   useEffect(() => {
-    if (open) { setTimeout(() => inputRef.current?.focus(), 50); setQuery(''); setResults([]) }
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 50)
+      // Deferred (not called synchronously from the effect body) — see
+      // react-hooks/set-state-in-effect.
+      queueMicrotask(() => { setQuery(''); setResults([]) })
+    }
   }, [open])
 
   // Debounced search
@@ -106,7 +112,7 @@ export function CommandPalette() {
                     <p className="text-[10px] font-mono text-slate-600 uppercase tracking-widest px-2 py-1.5">
                       {type === 'resume' ? 'Resumes' : 'Jobs'}
                     </p>
-                    {group.map((result, i) => {
+                    {group.map((result) => {
                       const globalIdx = results.indexOf(result)
                       return (
                         <div key={result.id}
@@ -142,11 +148,11 @@ export function CommandPalette() {
               })}
             </div>
           ) : query.length >= 2 && !loading ? (
-            <div className="px-4 py-8 text-center text-slate-600 text-sm">No results for "{query}"</div>
+            <div className="px-4 py-8 text-center text-slate-600 text-sm">No results for &quot;{query}&quot;</div>
           ) : (
             <div className="p-2">
               <p className="text-[10px] font-mono text-slate-600 uppercase tracking-widest px-2 py-1.5">Quick Links</p>
-              {QUICK_LINKS.map((link, i) => (
+              {QUICK_LINKS.map((link) => (
                 <div key={link.href}
                   onClick={() => { router.push(link.href); setOpen(false) }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/5 text-slate-400 hover:text-slate-200 transition-colors">

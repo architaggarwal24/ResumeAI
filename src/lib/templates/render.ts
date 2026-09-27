@@ -1,3 +1,4 @@
+// src/lib/templates/render.ts
 import type { ResumeData, TemplateId, Template } from '@/types/resume'
 
 export const TEMPLATES: Record<TemplateId, Template> = {
@@ -56,7 +57,7 @@ export function renderFullHTML(templateId: TemplateId, data: ResumeData): string
 // ─── Classic ──────────────────────────────────────────────────────────────────
 function renderClassic(d: ResumeData): string {
   const skills = d.skills?.categories?.map(c =>
-    `<div style="margin-bottom:4px"><strong>${esc(c.name)}:</strong> ${c.items?.join(', ')}</div>`
+    `<div style="margin-bottom:4px"><strong>${esc(c.name)}:</strong> ${c.items?.map(esc).join(', ')}</div>`
   ).join('') || ''
 
   return `<div style="font-family:Georgia,serif;font-size:13px;line-height:1.6;color:#111;max-width:680px;margin:0 auto">
@@ -75,7 +76,7 @@ function renderClassic(d: ResumeData): string {
 // ─── Modern ───────────────────────────────────────────────────────────────────
 function renderModern(d: ResumeData): string {
   const skills = d.skills?.categories?.map(c =>
-    `<div style="margin-bottom:8px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#7c3aed;font-weight:600;margin-bottom:2px">${esc(c.name)}</div><div style="font-size:11.5px">${c.items?.join(', ')}</div></div>`
+    `<div style="margin-bottom:8px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#7c3aed;font-weight:600;margin-bottom:2px">${esc(c.name)}</div><div style="font-size:11.5px">${c.items?.map(esc).join(', ')}</div></div>`
   ).join('') || ''
 
   return `<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:#111;display:grid;grid-template-columns:200px 1fr;gap:0;max-width:700px;margin:0 auto">
@@ -102,7 +103,7 @@ function renderModern(d: ResumeData): string {
 
 // ─── Minimal ──────────────────────────────────────────────────────────────────
 function renderMinimal(d: ResumeData): string {
-  const allSkills = d.skills?.categories?.flatMap(c => c.items || []).join(' · ') || ''
+  const allSkills = d.skills?.categories?.flatMap(c => c.items || []).map(esc).join(' · ') || ''
   return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.7;color:#1a1a1a;max-width:660px;margin:0 auto">
   <div style="border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:18px">
     <h1 style="font-size:30px;font-weight:300;letter-spacing:-.02em;margin-bottom:4px">${esc(d.name)}</h1>
@@ -118,7 +119,7 @@ function renderMinimal(d: ResumeData): string {
 // ─── Executive ────────────────────────────────────────────────────────────────
 function renderExecutive(d: ResumeData): string {
   const skills = d.skills?.categories?.map(c =>
-    `<span style="background:#fef3c7;padding:2px 8px;border-radius:4px;font-size:11px;margin:2px;display:inline-block;color:#92400e">${c.items?.join(', ')}</span>`
+    `<span style="background:#fef3c7;padding:2px 8px;border-radius:4px;font-size:11px;margin:2px;display:inline-block;color:#92400e">${c.items?.map(esc).join(', ')}</span>`
   ).join('') || ''
 
   return `<div style="font-family:Georgia,serif;font-size:13px;line-height:1.6;color:#1a1a1a;max-width:680px;margin:0 auto">

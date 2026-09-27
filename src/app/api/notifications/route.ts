@@ -1,3 +1,4 @@
+// src/app/api/notifications/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { NotificationType } from '@/types/resume'
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     const unreadCount = (data ?? []).filter(n => !n.read).length
     return NextResponse.json({ notifications: data ?? [], unreadCount })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 })
   }
 }
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
     return NextResponse.json({ notification: data }, { status: 201 })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to create notification' }, { status: 500 })
   }
 }
@@ -72,7 +73,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true })
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to mark read' }, { status: 500 })
   }
 }

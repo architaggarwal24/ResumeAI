@@ -1,8 +1,9 @@
+// src/components/resume/CoverLetterTab.tsx
 'use client'
 import { useState } from 'react'
 import { useResumeStore } from '@/store/resumeStore'
 import { Button, Card } from '@/components/ui/primitives'
-import { FileText, Copy, Download, Sparkles, RefreshCw } from 'lucide-react'
+import { FileText, Copy, Download, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CoverLetterTone } from '@/types/resume'
 
@@ -14,7 +15,7 @@ const TONES: { id: CoverLetterTone; label: string; desc: string }[] = [
 ]
 
 export function CoverLetterTab({ resumeId }: { resumeId: string }) {
-  const { resumeData, jobDescription, byokCreds, loading, setLoading, addToast } = useResumeStore()
+  const { resumeData, jobDescription, byokCreds, addToast } = useResumeStore()
   const [tone, setTone]           = useState<CoverLetterTone>('professional')
   const [localJD, setLocalJD]     = useState(jobDescription)
   const [content, setContent]     = useState('')

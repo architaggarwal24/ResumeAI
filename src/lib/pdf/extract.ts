@@ -1,3 +1,4 @@
+// src/lib/pdf/extract.ts
 'use client'
 
 // PDF.js is loaded via CDN in the HTML — this util wraps it safely

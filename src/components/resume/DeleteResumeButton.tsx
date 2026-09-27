@@ -1,3 +1,4 @@
+// src/components/resume/DeleteResumeButton.tsx
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'

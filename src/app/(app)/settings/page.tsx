@@ -1,3 +1,4 @@
+// src/app/(app)/settings/page.tsx
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -7,7 +8,7 @@ import { TEMPLATES } from '@/lib/templates/render'
 import { Button, Card } from '@/components/ui/primitives'
 import { cn } from '@/lib/utils'
 import {
-  Settings, User, Cpu, Layout, AlertTriangle, Check,
+  Settings, User, Layout, AlertTriangle, Check,
   Loader2, Trash2, Eye, EyeOff, Key, CheckCircle, XCircle, AlertCircle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -16,7 +17,7 @@ import type { LLMProvider, TemplateId } from '@/types/resume'
 export default function SettingsPage() {
   const router   = useRouter()
   const supabase = createClient()
-  const { byokCreds, setProvider, setApiKey, setModel, hydrated } = useResumeStore()
+  const { byokCreds, setProvider, setApiKey, setModel, setBaseUrl, hydrated } = useResumeStore()
 
   const [userEmail, setEmail]               = useState('')
   const [defaultTemplate, setTemplate]      = useState<TemplateId>('classic')
@@ -25,7 +26,6 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm]   = useState('')
   const [deleting, setDeleting]             = useState(false)
   const [loadingUser, setLoadingUser]       = useState(true)
-  const [savedKeys, setSavedKeys]           = useState<Partial<Record<LLMProvider, boolean>>>({})
 
   // Per-provider key state — synced from store after hydration
   const [showKeys, setShowKeys]             = useState<Partial<Record<LLMProvider, boolean>>>({})
@@ -35,6 +35,8 @@ export default function SettingsPage() {
   const [testResult, setTestResult]         = useState<'ok' | 'fail' | null>(null)
   const [testError, setTestError]           = useState('')
   const [testLatency, setTestLatency]       = useState<number | null>(null)
+  const [jsonResult, setJsonResult]         = useState<'ok' | 'fail' | null>(null)
+  const [jsonError, setJsonError]           = useState('')
 
   const cfg = PROVIDERS[byokCreds.provider]
   const isCustomModel = !cfg.models.includes(byokCreds.model)
@@ -46,25 +48,29 @@ export default function SettingsPage() {
       setLoadingUser(false)
     }
     load()
-    // Load saved key status from localStorage
-    const keys: Partial<Record<LLMProvider, boolean>> = {}
-    ;(Object.keys(PROVIDERS) as LLMProvider[]).forEach(id => {
-      keys[id] = !!getStoredKey(id)
-    })
-    setSavedKeys(keys)
   }, []) // eslint-disable-line
 
   async function testConnection() {
-    if (!byokCreds.apiKey) return
-    setTesting(true); setTestResult(null); setTestError(''); setTestLatency(null)
+    if (byokCreds.provider !== 'ollama' && !byokCreds.apiKey) return
+    setTesting(true); setTestResult(null); setTestError(''); setTestLatency(null); setJsonResult(null); setJsonError('')
     try {
       const res = await fetch('/api/test-connection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(byokCreds),
       })
-      const data = await res.json() as { ok: boolean; error?: string; latencyMs?: number }
-      if (data.ok) { setTestResult('ok'); setTestLatency(data.latencyMs ?? null) }
+      const data = await res.json() as {
+        ok: boolean; error?: string; latencyMs?: number
+        basic?: { ok: boolean; error?: string; latencyMs?: number }
+        json?: { ok: boolean; error?: string; latencyMs?: number } | null
+      }
+      if (data.ok) {
+        setTestResult('ok'); setTestLatency(data.basic?.latencyMs ?? data.latencyMs ?? null)
+        if (data.json) {
+          setJsonResult(data.json.ok ? 'ok' : 'fail')
+          if (!data.json.ok) setJsonError(data.json.error || 'JSON output not supported')
+        }
+      }
       else { setTestResult('fail'); setTestError(data.error || 'Failed') }
     } catch { setTestResult('fail'); setTestError('Server unreachable') }
     setTesting(false)
@@ -134,7 +140,7 @@ export default function SettingsPage() {
           <h2 className="font-semibold text-sm">AI Provider &amp; API Keys</h2>
         </div>
         <p className="text-xs text-slate-500 mb-4">
-          Keys are saved in your browser's localStorage — they persist across refreshes but stay on this device only. Never sent to our servers.
+          Keys are saved in your browser&apos;s sessionStorage — they persist across refreshes but clear when you close this tab, and stay on this device only. Never sent to our servers.
         </p>
 
         {/* Provider tabs */}
@@ -145,33 +151,51 @@ export default function SettingsPage() {
                 'flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all whitespace-nowrap',
                 byokCreds.provider === id ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               )}
-              onClick={() => { setProvider(id); setTestResult(null); setTestError(''); const k: Partial<Record<LLMProvider, boolean>> = {}; (Object.keys(PROVIDERS) as LLMProvider[]).forEach(p => { k[p] = !!getStoredKey(p) }); setSavedKeys(k) }}>
+              onClick={() => { setProvider(id); setTestResult(null); setTestError('') }}>
               {PROVIDERS[id].name}
             </button>
           ))}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          {/* API Key */}
+          {/* API Key / Server URL */}
           <div>
-            <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">
-              API Key — {cfg.name}
-            </label>
-            <div className="relative">
-              <input
-                type={showKeys[byokCreds.provider] ? 'text' : 'password'}
-                value={byokCreds.apiKey}
-                onChange={e => { setApiKey(e.target.value); setTestResult(null); setSavedKeys(p => ({ ...p, [byokCreds.provider]: !!e.target.value })) }}
-                placeholder={cfg.placeholder}
-                className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
-              />
-              <button
-                onClick={() => setShowKeys(p => ({ ...p, [byokCreds.provider]: !p[byokCreds.provider] }))}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                {showKeys[byokCreds.provider] ? <EyeOff size={14}/> : <Eye size={14}/>}
-              </button>
-            </div>
-            <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
+            {byokCreds.provider === 'ollama' ? (
+              <>
+                <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">
+                  Server URL — {cfg.name}
+                </label>
+                <input
+                  type="text"
+                  value={byokCreds.baseUrl ?? cfg.baseUrl ?? ''}
+                  onChange={e => { setBaseUrl(e.target.value); setTestResult(null) }}
+                  placeholder="http://localhost:11434/v1/chat/completions"
+                  className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
+                />
+                <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
+              </>
+            ) : (
+              <>
+                <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">
+                  API Key — {cfg.name}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showKeys[byokCreds.provider] ? 'text' : 'password'}
+                    value={byokCreds.apiKey}
+                    onChange={e => { setApiKey(e.target.value); setTestResult(null) }}
+                    placeholder={cfg.placeholder}
+                    className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
+                  />
+                  <button
+                    onClick={() => setShowKeys(p => ({ ...p, [byokCreds.provider]: !p[byokCreds.provider] }))}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                    {showKeys[byokCreds.provider] ? <EyeOff size={14}/> : <Eye size={14}/>}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
+              </>
+            )}
           </div>
 
           {/* Model */}
@@ -194,7 +218,7 @@ export default function SettingsPage() {
               <div className="flex gap-1.5 mb-2 fade-in">
                 <input value={customModel} onChange={e => setCustomModel(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && applyCustomModel()}
-                  placeholder="e.g. deepseek/deepseek-v3:free" autoFocus
+                  placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. nvidia/nemotron-3-nano-30b-a3b' : byokCreds.provider === 'ollama' ? 'e.g. llama3.1:8b' : 'model ID'} autoFocus
                   className="flex-1 bg-[#1c1c24] border border-violet-500/40 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/70"/>
                 <button onClick={applyCustomModel} className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-lg">Use</button>
                 <button onClick={() => setShowCustom(false)} className="px-2 py-1.5 bg-white/5 text-slate-400 text-xs rounded-lg">✕</button>
@@ -215,11 +239,21 @@ export default function SettingsPage() {
               </button>
               {testResult === 'ok' && <span className="flex items-center gap-1 text-xs text-emerald-400"><CheckCircle size={12}/>Connected {testLatency ? `(${testLatency}ms)` : ''}</span>}
               {testResult === 'fail' && <span className="flex items-center gap-1 text-xs text-red-400"><XCircle size={12}/>Failed</span>}
+              {jsonResult === 'ok' && <span className="flex items-center gap-1 text-xs text-emerald-400"><CheckCircle size={12}/>JSON output OK</span>}
+              {jsonResult === 'fail' && <span className="flex items-center gap-1 text-xs text-amber-400"><AlertCircle size={12}/>JSON output unreliable</span>}
             </div>
             {testResult === 'fail' && testError && (
               <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
                 <AlertCircle size={12} className="text-red-400 mt-0.5 shrink-0"/>
                 <p className="text-xs text-red-300 leading-snug">{testError}</p>
+              </div>
+            )}
+            {jsonResult === 'fail' && jsonError && (
+              <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0"/>
+                <p className="text-xs text-amber-300 leading-snug">
+                  Connected, but this model didn&apos;t return valid JSON — scoring, suggestions, and the AI coach&apos;s edit proposals may fail. {jsonError}
+                </p>
               </div>
             )}
           </div>
@@ -230,7 +264,6 @@ export default function SettingsPage() {
           <p className="text-xs font-mono text-slate-600 uppercase tracking-wider mb-2">Saved Keys</p>
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(PROVIDERS) as LLMProvider[]).map(id => {
-              const { getStoredKey } = require('@/store/resumeStore')
               const hasKey = !!getStoredKey(id)
               return (
                 <div key={id} className={cn('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border',

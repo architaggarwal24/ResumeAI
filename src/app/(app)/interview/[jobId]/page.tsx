@@ -1,12 +1,13 @@
+// src/app/(app)/interview/[jobId]/page.tsx
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useResumeStore } from '@/store/resumeStore'
-import { Button, Card, CardSm, Badge } from '@/components/ui/primitives'
+import { Button, Card } from '@/components/ui/primitives'
 import { cn } from '@/lib/utils'
 import {
   MessageSquare, ChevronDown, ChevronUp, CheckSquare, Square,
-  Sparkles, AlertTriangle, Star, Lightbulb, RefreshCw, ArrowLeft,
+  Sparkles, AlertTriangle, Star, Lightbulb, ArrowLeft,
   Loader2
 } from 'lucide-react'
 import type { InterviewPrepResult, InterviewQuestion, QuestionType } from '@/types/resume'

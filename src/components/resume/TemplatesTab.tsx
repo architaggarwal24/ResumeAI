@@ -1,18 +1,19 @@
+// src/components/resume/TemplatesTab.tsx
 'use client'
 import { useState } from 'react'
 import { useResumeStore } from '@/store/resumeStore'
 import { TEMPLATES, renderTemplate } from '@/lib/templates/render'
-import { Button, Card } from '@/components/ui/primitives'
-import { Download, Check, FileText, FileCode2, Copy } from 'lucide-react'
+import { Card } from '@/components/ui/primitives'
+import { Check, FileText, FileCode2, FileType } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { TemplateId } from '@/types/resume'
 
-type ExportFormat = 'html' | 'docx' | 'txt'
+type ExportFormat = 'pdf' | 'docx' | 'latex'
 
 const FORMAT_CONFIG: { id: ExportFormat; label: string; icon: React.ReactNode; desc: string }[] = [
-  { id: 'html',  label: 'HTML',        icon: <FileCode2 size={13}/>, desc: 'Open in browser → Print → Save as PDF' },
+  { id: 'pdf',   label: 'PDF',         icon: <FileType  size={13}/>, desc: 'Ready to submit — opens anywhere, print-perfect' },
   { id: 'docx',  label: 'Word (.docx)',icon: <FileText  size={13}/>, desc: 'Edit in Microsoft Word or Google Docs' },
-  { id: 'txt',   label: 'Plain Text',  icon: <Copy      size={13}/>, desc: 'For copy-pasting into application forms' },
+  { id: 'latex', label: 'LaTeX',       icon: <FileCode2 size={13}/>, desc: 'A .tex source file — edit and compile with any LaTeX tool' },
 ]
 
 export function TemplatesTab({ resumeId }: { resumeId: string }) {
@@ -39,15 +40,15 @@ export function TemplatesTab({ resumeId }: { resumeId: string }) {
       if (!res.ok) throw new Error('Export failed')
       const blob      = await res.blob()
       const url       = URL.createObjectURL(blob)
-      const ext       = format === 'docx' ? 'docx' : format === 'txt' ? 'txt' : 'html'
+      const ext       = format === 'docx' ? 'docx' : format === 'latex' ? 'tex' : 'pdf'
       const filename  = `${(resumeData.name || 'resume').replace(/\s+/g, '_')}.${ext}`
       const a         = document.createElement('a')
       a.href = url; a.download = filename; a.click()
       URL.revokeObjectURL(url)
       const hints: Record<ExportFormat, string> = {
-        html:  'Open the HTML file in your browser, then Ctrl+P → Save as PDF',
+        pdf:   'PDF downloaded — ready to submit as-is',
         docx:  'Opened in Word or Google Docs — ready to edit',
-        txt:   'Plain text ready to paste into application forms',
+        latex: 'Compile the .tex file with any LaTeX distribution, or upload it to Overleaf',
       }
       addToast(hints[format], 'success', 6000)
     } catch {

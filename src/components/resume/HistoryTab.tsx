@@ -1,3 +1,4 @@
+// src/components/resume/HistoryTab.tsx
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useResumeStore } from '@/store/resumeStore'
@@ -38,7 +39,9 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
     setLoadingV(false)
   }, [resumeId, addToast])
 
-  useEffect(() => { fetchVersions() }, [fetchVersions])
+  // Deferred (not called synchronously from the effect body) — see
+  // react-hooks/set-state-in-effect.
+  useEffect(() => { queueMicrotask(fetchVersions) }, [fetchVersions])
 
   async function createSnapshot() {
     setSaving(true)

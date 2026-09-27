@@ -1,7 +1,8 @@
+// src/components/notifications/NotificationBell.tsx
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, X, Check, CheckCheck, Loader2 } from 'lucide-react'
+import { Bell, X, CheckCheck, Loader2 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
 import type { Notification } from '@/types/resume'
 
@@ -35,7 +36,10 @@ export function NotificationBell() {
   }
 
   useEffect(() => {
-    fetchNotifs()
+    // Deferred (not called synchronously from the effect body) so the state
+    // updates inside fetchNotifs happen in their own task, not as part of
+    // this render's commit — see react-hooks/set-state-in-effect.
+    queueMicrotask(fetchNotifs)
     // Poll every 60s
     const interval = setInterval(fetchNotifs, 60_000)
     return () => clearInterval(interval)
