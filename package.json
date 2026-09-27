@@ -1,7 +1,16 @@
 {
-  "name": "resumeai-v3-prod",
+  "name": "resumeai",
   "version": "0.1.0",
   "private": true,
+  "description": "AI-powered resume intelligence platform — ATS scoring, tailoring, cover letters, and interview prep, bring-your-own-key across six LLM providers.",
+  "author": {
+    "name": "Archit Aggarwal",
+    "url": "https://architaggarwal24.github.io"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -15,14 +24,15 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@react-pdf/renderer": "^4.9.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "docx": "^9.7.1",
     "lucide-react": "^1.16.0",
-    "next": "16.2.6",
-    "pdfjs-dist": "^5.7.284",
+    "next": "^16.3.5",
+    "pdfjs-dist": "^6.3.289",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.6.0",
@@ -37,5 +47,8 @@
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "unrs-resolver@1.12.2": true
   }
 }

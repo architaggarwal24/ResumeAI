@@ -1,0 +1,7 @@
+# netlify.toml
+[build]
+  command = "npm run build"
+
+[build.environment]
+  # Next.js 16 requires Node.js 20.9+. "20" resolves to the latest Node 20 LTS patch.
+  NODE_VERSION = "20"
