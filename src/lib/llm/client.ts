@@ -10,7 +10,6 @@ export const PROVIDERS: Record<LLMProvider, {
   models: string[]
   defaultModel: string
   fastModel: string
-  baseUrl?: string
 }> = {
   anthropic: {
     name: 'Anthropic',
@@ -51,7 +50,6 @@ export const PROVIDERS: Record<LLMProvider, {
     ],
     defaultModel: 'openrouter/free',
     fastModel:    'openrouter/free',
-    baseUrl:      'https://openrouter.ai/api/v1/chat/completions',
   },
   nvidia: {
     name: 'NVIDIA NIM',
@@ -69,23 +67,6 @@ export const PROVIDERS: Record<LLMProvider, {
     ],
     defaultModel: 'nvidia/nemotron-3-nano-30b-a3b',
     fastModel:    'nvidia/nemotron-3-nano-30b-a3b',
-    baseUrl:      'https://integrate.api.nvidia.com/v1/chat/completions',
-  },
-  ollama: {
-    name: 'Ollama (Local)',
-    placeholder: 'not required — leave blank',
-    hint: 'Run `ollama serve` locally · browse models at ollama.com/library',
-    models: [
-      'llama3.1:8b',
-      'llama3.2:3b',
-      'qwen2.5:7b',
-      'gemma4:31b-cloud',
-      'nemotron-3-ultra:cloud',
-      'nemotron-3-super:cloud',
-    ],
-    defaultModel: 'llama3.1:8b',
-    fastModel:    'llama3.2:3b',
-    baseUrl:      'http://localhost:11434/v1/chat/completions',
   },
 }
 
@@ -126,9 +107,9 @@ export class LLMError extends Error {
 // OpenRouter and NVIDIA NIM block direct browser requests.
 // All providers go through our server proxy for consistency.
 
-// 1 retry (2 attempts total) — each attempt can take up to the provider timeout
-// (60s for cloud, 180s for Ollama), so this caps worst-case latency per call at
-// ~2x the timeout instead of ~3x.
+// 1 retry (2 attempts total) — each attempt can take up to the provider's 60s
+// timeout, so this caps worst-case latency per call at ~2x the timeout instead
+// of ~3x.
 const MAX_RETRIES = 1
 
 // Resolve the correct URL for /api/llm depending on context:

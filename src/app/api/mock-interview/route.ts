@@ -22,12 +22,12 @@ async function streamOpenAICompat(
     openai:     'https://api.openai.com/v1/chat/completions',
     openrouter: 'https://openrouter.ai/api/v1/chat/completions',
     nvidia:     'https://integrate.api.nvidia.com/v1/chat/completions',
-    ollama:     creds.baseUrl?.trim() || 'http://localhost:11434/v1/chat/completions',
   }
   const url = urlMap[creds.provider] || urlMap.openai
-  const isOllama = creds.provider === 'ollama'
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (!isOllama) headers['Authorization'] = `Bearer ${creds.apiKey}`
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${creds.apiKey}`,
+  }
   if (creds.provider === 'openrouter') { headers['HTTP-Referer'] = 'https://resumeai.app'; headers['X-Title'] = 'ResumeAI' }
 
   const res = await fetch(url, {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       targetRole?: string
     }
 
-    if (!body.creds?.apiKey && body.creds?.provider !== 'ollama') {
+    if (!body.creds?.apiKey) {
       return NextResponse.json({ error: 'API key required' }, { status: 400 })
     }
     if (!body.resumeData) {
@@ -176,7 +176,7 @@ ${JSON.stringify(body.resumeData, null, 2)}${body.targetRole ? `\n\nTarget role:
       })
     }
 
-    // OpenAI / OpenRouter / NVIDIA / Ollama — streaming
+    // OpenAI / OpenRouter / NVIDIA — streaming
     const rawStream = await streamOpenAICompat(body.creds, systemPrompt, chatMessages, request.signal)
     return new NextResponse(toTextStream(rawStream, body.creds.provider), {
       headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Accel-Buffering': 'no' }

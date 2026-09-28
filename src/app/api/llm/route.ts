@@ -1,7 +1,6 @@
 // src/app/api/llm/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { isAllowedOllamaUrl } from '@/lib/llm/ollama-guard'
 import type { BYOKCreds } from '@/types/resume'
 
 // Vercel's default Serverless Function timeout (10s on Hobby) is well
@@ -15,7 +14,6 @@ const PROVIDER_URLS: Record<string, string> = {
   openai:     'https://api.openai.com/v1/chat/completions',
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
   nvidia:     'https://integrate.api.nvidia.com/v1/chat/completions',
-  ollama:     'http://localhost:11434/v1/chat/completions',
 }
 
 // Models known to use extended reasoning — these get temperature=0 forced
@@ -73,7 +71,7 @@ export async function POST(request: NextRequest) {
     const reasoning = isReasoningModel(creds.model)
     const temperature = reasoning ? 0 : (body.temperature ?? 0)
 
-    if (!creds?.provider || (creds.provider !== 'ollama' && !creds?.apiKey)) {
+    if (!creds?.provider || !creds?.apiKey) {
       return NextResponse.json({ error: 'Missing creds' }, { status: 400 })
     }
 
@@ -123,61 +121,39 @@ ${systemPrompt}`
       rawText = d.candidates?.[0]?.content?.parts?.[0]?.text || ''
     }
 
-    // ── OpenAI / OpenRouter / NVIDIA / Ollama (OpenAI-compat) ────────────────
+    // ── OpenAI / OpenRouter / NVIDIA (OpenAI-compat) ─────────────────────────
     else {
-      const isOllama = creds.provider === 'ollama'
-      const url = isOllama
-        ? (creds.baseUrl?.trim() || PROVIDER_URLS.ollama)
-        : (PROVIDER_URLS[creds.provider] || PROVIDER_URLS.openai)
+      const url = PROVIDER_URLS[creds.provider] || PROVIDER_URLS.openai
 
-      if (isOllama && !isAllowedOllamaUrl(url)) {
-        return NextResponse.json({
-          error: 'Invalid Ollama baseUrl — only http://localhost:11434 or http://127.0.0.1:11434 are allowed'
-        }, { status: 400 })
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${creds.apiKey}`,
       }
-
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (!isOllama) headers['Authorization'] = `Bearer ${creds.apiKey}`
       if (creds.provider === 'openrouter') {
         headers['HTTP-Referer'] = 'https://resumeai.app'
         headers['X-Title'] = 'ResumeAI'
       }
 
-      // json_object response_format works reliably on OpenAI + Ollama.
+      // json_object response_format works reliably on OpenAI.
       // OpenRouter and NVIDIA reasoning models frequently return empty content
       // when this is forced — rely on the prompt instruction instead.
-      const useJsonFormat = creds.provider === 'openai' || isOllama
-      const timeoutMs = isOllama ? 180_000 : 60_000
+      const useJsonFormat = creds.provider === 'openai'
 
-      let res: Response
-      try {
-        res = await fetch(url, {
-          method: 'POST', headers,
-          body: JSON.stringify({
-            model: creds.model,
-            messages: [{ role: 'system', content: strictSystem }, { role: 'user', content: userPrompt }],
-            temperature, max_tokens: maxTokens,
-            ...(useJsonFormat ? { response_format: { type: 'json_object' } } : {}),
-          }),
-          signal: AbortSignal.timeout(timeoutMs),
-        })
-      } catch (err) {
-        if (isOllama) {
-          return NextResponse.json({
-            error: `Could not reach Ollama at ${url}. Make sure "ollama serve" is running and the model is pulled (ollama pull ${creds.model}).`
-          }, { status: 502 })
-        }
-        throw err
-      }
+      const res = await fetch(url, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          model: creds.model,
+          messages: [{ role: 'system', content: strictSystem }, { role: 'user', content: userPrompt }],
+          temperature, max_tokens: maxTokens,
+          ...(useJsonFormat ? { response_format: { type: 'json_object' } } : {}),
+        }),
+        signal: AbortSignal.timeout(60_000),
+      })
 
       if (!res.ok) {
         const e = await res.json().catch(() => ({})) as { error?: { message?: string } | string }
         const rawMsg = typeof e?.error === 'string' ? e.error : e?.error?.message
         const msg = rawMsg || `${creds.provider} ${res.status}`
-        if (isOllama) {
-          if (res.status === 404) return NextResponse.json({ error: `Model "${creds.model}" not found in Ollama. Run: ollama pull ${creds.model}` }, { status: 404 })
-          return NextResponse.json({ error: msg }, { status: res.status })
-        }
         if (res.status === 401 || res.status === 403) return NextResponse.json({ error: 'Invalid API key' }, { status: 401 })
         if (res.status === 402) return NextResponse.json({ error: 'Insufficient credits' }, { status: 402 })
         if (res.status === 429) return NextResponse.json({ error: 'Rate limit — wait a moment' }, { status: 429 })

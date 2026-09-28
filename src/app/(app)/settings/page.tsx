@@ -17,7 +17,7 @@ import type { LLMProvider, TemplateId } from '@/types/resume'
 export default function SettingsPage() {
   const router   = useRouter()
   const supabase = createClient()
-  const { byokCreds, setProvider, setApiKey, setModel, setBaseUrl, hydrated } = useResumeStore()
+  const { byokCreds, setProvider, setApiKey, setModel, hydrated } = useResumeStore()
 
   const [userEmail, setEmail]               = useState('')
   const [defaultTemplate, setTemplate]      = useState<TemplateId>('classic')
@@ -51,7 +51,7 @@ export default function SettingsPage() {
   }, []) // eslint-disable-line
 
   async function testConnection() {
-    if (byokCreds.provider !== 'ollama' && !byokCreds.apiKey) return
+    if (!byokCreds.apiKey) return
     setTesting(true); setTestResult(null); setTestError(''); setTestLatency(null); setJsonResult(null); setJsonError('')
     try {
       const res = await fetch('/api/test-connection', {
@@ -158,23 +158,8 @@ export default function SettingsPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          {/* API Key / Server URL */}
+          {/* API Key */}
           <div>
-            {byokCreds.provider === 'ollama' ? (
-              <>
-                <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">
-                  Server URL — {cfg.name}
-                </label>
-                <input
-                  type="text"
-                  value={byokCreds.baseUrl ?? cfg.baseUrl ?? ''}
-                  onChange={e => { setBaseUrl(e.target.value); setTestResult(null) }}
-                  placeholder="http://localhost:11434/v1/chat/completions"
-                  className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
-                />
-                <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
-              </>
-            ) : (
               <>
                 <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">
                   API Key — {cfg.name}
@@ -195,7 +180,6 @@ export default function SettingsPage() {
                 </div>
                 <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
               </>
-            )}
           </div>
 
           {/* Model */}
@@ -218,7 +202,7 @@ export default function SettingsPage() {
               <div className="flex gap-1.5 mb-2 fade-in">
                 <input value={customModel} onChange={e => setCustomModel(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && applyCustomModel()}
-                  placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. nvidia/nemotron-3-nano-30b-a3b' : byokCreds.provider === 'ollama' ? 'e.g. llama3.1:8b' : 'model ID'} autoFocus
+                  placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. nvidia/nemotron-3-nano-30b-a3b' : 'model ID'} autoFocus
                   className="flex-1 bg-[#1c1c24] border border-violet-500/40 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/70"/>
                 <button onClick={applyCustomModel} className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-lg">Use</button>
                 <button onClick={() => setShowCustom(false)} className="px-2 py-1.5 bg-white/5 text-slate-400 text-xs rounded-lg">✕</button>

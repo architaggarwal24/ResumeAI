@@ -15,13 +15,6 @@ import { PROVIDERS } from '@/lib/llm/client'
 const KEY_PREFIX     = 'rai_key_'
 const PROVIDER_KEY   = 'rai_provider'
 const MODEL_KEY      = 'rai_model_'
-const BASEURL_KEY    = 'rai_baseurl_'
-
-// Ollama runs locally with no API key — the proxy routes don't require auth
-// for it, but a lot of UI/validation code gates on `apiKey` being non-empty.
-// We store this sentinel so those checks pass naturally for Ollama without
-// touching every call site.
-export const OLLAMA_SENTINEL_KEY = 'ollama-local'
 
 function read(key: string): string {
   try { return sessionStorage.getItem(key) ?? '' } catch { return '' }
@@ -30,18 +23,20 @@ function write(key: string, val: string): void {
   try { sessionStorage.setItem(key, val) } catch {}
 }
 
-export function getStoredKey(provider: LLMProvider): string {
-  if (provider === 'ollama') return OLLAMA_SENTINEL_KEY
-  return read(`${KEY_PREFIX}${provider}`)
-}
+export function getStoredKey(provider: LLMProvider): string    { return read(`${KEY_PREFIX}${provider}`) }
 export function setStoredKey(provider: LLMProvider, key: string) { write(`${KEY_PREFIX}${provider}`, key) }
-export function getStoredProvider(): LLMProvider               { return (read(PROVIDER_KEY) as LLMProvider) || 'anthropic' }
+export function getStoredProvider(): LLMProvider {
+  // A provider name saved by an older version of the app (or an already-open
+  // tab from before a provider was removed) must not be trusted blindly —
+  // PROVIDERS[unknown] is undefined and would crash the moment anything reads
+  // its defaultModel.
+  const stored = read(PROVIDER_KEY)
+  return Object.prototype.hasOwnProperty.call(PROVIDERS, stored) ? (stored as LLMProvider) : 'anthropic'
+}
 export function getStoredModel(provider: LLMProvider): string  { return read(`${MODEL_KEY}${provider}`) || PROVIDERS[provider].defaultModel }
-export function getStoredBaseUrl(provider: LLMProvider): string { return read(`${BASEURL_KEY}${provider}`) || PROVIDERS[provider].baseUrl || '' }
-export function setStoredBaseUrl(provider: LLMProvider, url: string) { write(`${BASEURL_KEY}${provider}`, url) }
 
 function buildCreds(provider: LLMProvider): BYOKCreds {
-  return { provider, apiKey: getStoredKey(provider), model: getStoredModel(provider), baseUrl: getStoredBaseUrl(provider) }
+  return { provider, apiKey: getStoredKey(provider), model: getStoredModel(provider) }
 }
 
 const DEFAULT_CREDS: BYOKCreds = {
@@ -124,7 +119,6 @@ interface ResumeStore {
   setProvider: (provider: LLMProvider) => void
   setApiKey: (key: string) => void
   setModel: (model: string) => void
-  setBaseUrl: (url: string) => void
   setByokCreds: (creds: Partial<BYOKCreds>) => void
 
   undo: () => void
@@ -237,20 +231,14 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     write(`${MODEL_KEY}${byokCreds.provider}`, model)
     set({ byokCreds: { ...byokCreds, model } })
   },
-  setBaseUrl: (url) => {
-    const { byokCreds } = get()
-    setStoredBaseUrl(byokCreds.provider, url)
-    set({ byokCreds: { ...byokCreds, baseUrl: url } })
-  },
   setByokCreds: (partial) => {
     const { byokCreds } = get()
     if (partial.provider && partial.provider !== byokCreds.provider) {
       write(PROVIDER_KEY, partial.provider)
       set({ byokCreds: buildCreds(partial.provider) })
     } else {
-      if (partial.apiKey  !== undefined) setStoredKey(byokCreds.provider, partial.apiKey)
-      if (partial.model   !== undefined) write(`${MODEL_KEY}${byokCreds.provider}`, partial.model)
-      if (partial.baseUrl !== undefined) setStoredBaseUrl(byokCreds.provider, partial.baseUrl)
+      if (partial.apiKey !== undefined) setStoredKey(byokCreds.provider, partial.apiKey)
+      if (partial.model  !== undefined) write(`${MODEL_KEY}${byokCreds.provider}`, partial.model)
       set({ byokCreds: { ...byokCreds, ...partial } })
     }
   },

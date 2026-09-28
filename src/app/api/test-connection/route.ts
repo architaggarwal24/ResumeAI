@@ -1,7 +1,6 @@
 // src/app/api/test-connection/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { isAllowedOllamaUrl } from '@/lib/llm/ollama-guard'
 import type { BYOKCreds } from '@/types/resume'
 
 // Vercel's default Serverless Function timeout (10s on Hobby) is well
@@ -66,33 +65,6 @@ async function checkBasicConnection(creds: BYOKCreds): Promise<CheckResult> {
         if (res.status === 404) return { ok: false, error: `Model "${creds.model}" not found` }
         if (res.status === 429) return { ok: false, error: 'Rate limit — wait a moment' }
         return { ok: false, error: `HTTP ${res.status}` }
-      }
-      return { ok: true, latencyMs: Date.now() - start }
-    }
-
-    case 'ollama': {
-      const url = (creds.baseUrl?.trim() || 'http://localhost:11434/v1/chat/completions')
-      let res: Response
-      try {
-        res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: creds.model,
-            max_tokens: 10,
-            messages: [{ role: 'user', content: 'Hi' }],
-          }),
-          signal: AbortSignal.timeout(20000),
-        })
-      } catch {
-        return { ok: false, error: `Could not reach Ollama at ${url}. Is "ollama serve" running?` }
-      }
-
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({})) as { error?: { message?: string } | string }
-        const msg = typeof e?.error === 'string' ? e.error : e?.error?.message
-        if (res.status === 404) return { ok: false, error: `Model "${creds.model}" not found — run: ollama pull ${creds.model}` }
-        return { ok: false, error: msg || `HTTP ${res.status}` }
       }
       return { ok: true, latencyMs: Date.now() - start }
     }
@@ -189,18 +161,8 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const creds = await request.json() as BYOKCreds
-    if (!creds?.provider || (creds.provider !== 'ollama' && !creds?.apiKey)) {
+    if (!creds?.provider || !creds?.apiKey) {
       return NextResponse.json({ ok: false, error: 'Missing apiKey or provider' }, { status: 400 })
-    }
-
-    if (creds.provider === 'ollama') {
-      const url = creds.baseUrl?.trim() || 'http://localhost:11434/v1/chat/completions'
-      if (!isAllowedOllamaUrl(url)) {
-        return NextResponse.json({
-          ok: false,
-          error: 'Invalid Ollama baseUrl — only http://localhost:11434 or http://127.0.0.1:11434 are allowed'
-        }, { status: 400 })
-      }
     }
 
     const basic = await checkBasicConnection(creds)

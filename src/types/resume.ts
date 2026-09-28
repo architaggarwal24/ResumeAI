@@ -235,7 +235,7 @@ export interface UserRow {
 
 // ─── LLM / BYOK ───────────────────────────────────────────────────────────────
 
-export type LLMProvider = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'nvidia' | 'ollama'
+export type LLMProvider = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'nvidia'
 
 // Per-provider credentials stored separately so switching tabs doesn't wipe keys
 export type PerProviderKeys = Partial<Record<LLMProvider, string>>
@@ -244,9 +244,6 @@ export interface BYOKCreds {
   provider: LLMProvider
   apiKey: string
   model: string
-  // Optional override for the provider's API base URL — used by Ollama
-  // to point at a local or remote Ollama server (default http://localhost:11434)
-  baseUrl?: string
 }
 
 export interface LLMOptions {

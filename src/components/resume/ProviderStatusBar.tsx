@@ -96,9 +96,6 @@ export function ProviderStatusBar() {
               <span className="text-slate-300 text-xs">
                 Using <span className="font-medium text-slate-200">{PROVIDERS[byokCreds.provider].name}</span>
                 <span className="text-slate-500 ml-2 font-mono">{byokCreds.model}</span>
-                {byokCreds.provider === 'ollama' && (
-                  <span className="text-slate-600 ml-2 font-mono">@ {byokCreds.baseUrl || PROVIDERS.ollama.baseUrl}</span>
-                )}
               </span>
             </div>
 

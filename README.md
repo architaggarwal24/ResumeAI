@@ -14,7 +14,7 @@ AI-powered resume intelligence platform: score your resume against a job descrip
 - **Multiple templates** — Classic, Modern, Minimal, and Executive, exported as PDF, DOCX, or LaTeX (a `.tex` source file ready to compile or drop into Overleaf).
 - **Public share links** — share a read-only, optionally password-protected link to a specific resume version.
 - **Version history, job tracking, analytics dashboard, and a command palette (⌘K)** for getting around quickly.
-- **Bring your own key (BYOK)** — Anthropic, OpenAI, Gemini, OpenRouter, NVIDIA NIM, or a local Ollama server. Keys are typed into the browser, held in `sessionStorage` only, and sent straight from your browser to your chosen provider — this app's own backend never stores or sees them.
+- **Bring your own key (BYOK)** — Anthropic, OpenAI, Gemini, OpenRouter, or NVIDIA NIM. Keys are typed into the browser and held in `sessionStorage` only. Requests pass through this app's own API routes to reach your chosen provider, but the key is never stored or logged.
 
 ## Tech stack
 
@@ -27,7 +27,7 @@ This is a **Next.js 16 full-stack application** — there is no separate Express
 | State | Zustand |
 | Backend | Next.js Route Handlers (no separate server) |
 | Database & Auth | Supabase (Postgres, Row-Level Security, Supabase Auth) |
-| AI providers | Anthropic, OpenAI, Gemini, OpenRouter, NVIDIA NIM, Ollama (BYOK, client-supplied) |
+| AI providers | Anthropic, OpenAI, Gemini, OpenRouter, NVIDIA NIM (BYOK, client-supplied) |
 | Deployment | Vercel or Netlify (config included for both) |
 
 ## Getting started
@@ -36,7 +36,7 @@ This is a **Next.js 16 full-stack application** — there is no separate Express
 
 - Node.js **20.9 or newer** (`node -v` to check)
 - A free [Supabase](https://supabase.com) project
-- An API key from at least one supported AI provider (or a local [Ollama](https://ollama.com) install) — you'll enter this in the app itself, not in an env file
+- An API key from at least one supported AI provider — you'll enter this in the app itself, not in an env file
 
 ### 1. Clone and install
 
@@ -144,7 +144,6 @@ Every route that calls an LLM sets `export const maxDuration = 60` — Vercel's 
 - Every API route that touches user data or calls an LLM checks for an authenticated Supabase session first.
 - Public share links are served through a single `SECURITY DEFINER` Postgres function, not a broad RLS policy — password verification happens inside Postgres via bcrypt, and the password hash never leaves the database.
 - All user-generated resume content is HTML-escaped before being rendered into exported documents or share pages.
-- The Ollama provider's `baseUrl` is restricted to `localhost`/`127.0.0.1` to prevent it being used as an open server-side request proxy.
 
 ## Contributing
 

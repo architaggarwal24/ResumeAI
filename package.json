@@ -2,7 +2,7 @@
   "name": "resumeai",
   "version": "0.1.0",
   "private": true,
-  "description": "AI-powered resume intelligence platform — ATS scoring, tailoring, cover letters, and interview prep, bring-your-own-key across six LLM providers.",
+  "description": "AI-powered resume intelligence platform — ATS scoring, tailoring, cover letters, and interview prep, bring-your-own-key across five LLM providers.",
   "author": {
     "name": "Archit Aggarwal",
     "url": "https://architaggarwal24.github.io"

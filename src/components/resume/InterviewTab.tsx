@@ -31,7 +31,7 @@ export function InterviewTab() {
   }, [messages, debrief])
 
   async function startInterview() {
-    if (!byokCreds.apiKey && byokCreds.provider !== 'ollama') {
+    if (!byokCreds.apiKey) {
       addToast('Add your API key in Settings first', 'error'); return
     }
     if (!resumeData) { addToast('No resume loaded', 'error'); return }

@@ -1,7 +1,6 @@
 // src/app/api/chat/route.ts
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { isAllowedOllamaUrl } from '@/lib/llm/ollama-guard'
 import { CHAT_EDIT_PROMPT } from '@/lib/llm/prompts'
 import type { BYOKCreds, ChatMessage, ResumeData } from '@/types/resume'
 
@@ -66,13 +65,12 @@ async function streamOpenAI(
   signal: AbortSignal,
   baseUrl = 'https://api.openai.com/v1/chat/completions'
 ): Promise<ReadableStream<Uint8Array>> {
-  const isOllama = baseUrl.includes('11434') || baseUrl.includes('ollama')
   const res = await fetch(baseUrl, {
     method: 'POST',
     signal,
     headers: {
       'Content-Type': 'application/json',
-      ...(isOllama ? {} : { 'Authorization': `Bearer ${apiKey}` }),
+      'Authorization': `Bearer ${apiKey}`,
       ...(baseUrl.includes('openrouter') ? { 'HTTP-Referer': 'https://resumeai.app' } : {}),
     },
     body: JSON.stringify({
@@ -80,13 +78,7 @@ async function streamOpenAI(
       messages: [{ role: 'system', content: system }, ...messages],
     }),
   })
-  if (!res.ok) {
-    if (isOllama) {
-      const e = await res.json().catch(() => ({})) as { error?: string }
-      throw new Error(e?.error || `Ollama error ${res.status} — is the model pulled? (ollama pull ${model})`)
-    }
-    throw new Error(`API error ${res.status}`)
-  }
+  if (!res.ok) throw new Error(`API error ${res.status}`)
   return res.body!
 }
 
@@ -145,7 +137,7 @@ export async function POST(request: NextRequest) {
       creds: BYOKCreds
     }
 
-    if (!body.creds?.provider || (body.creds.provider !== 'ollama' && !body.creds?.apiKey)) {
+    if (!body.creds?.provider || !body.creds?.apiKey) {
       return new Response('API key required', { status: 400 })
     }
 
@@ -172,14 +164,6 @@ ${JSON.stringify(buildChatResumeContext(body.resumeData), null, 2)}`
       case 'nvidia':
         rawStream = await streamOpenAI(apiKey, model, systemPrompt, messages, request.signal, 'https://integrate.api.nvidia.com/v1/chat/completions')
         break
-      case 'ollama': {
-        const ollamaUrl = body.creds.baseUrl?.trim() || 'http://localhost:11434/v1/chat/completions'
-        if (!isAllowedOllamaUrl(ollamaUrl)) {
-          return new Response('Invalid Ollama baseUrl — only http://localhost:11434 or http://127.0.0.1:11434 are allowed', { status: 400 })
-        }
-        rawStream = await streamOpenAI(apiKey, model, systemPrompt, messages, request.signal, ollamaUrl)
-        break
-      }
       case 'gemini': {
         // Gemini doesn't have great streaming — fall back to non-streaming
         const res = await fetch(
