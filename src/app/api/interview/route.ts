@@ -1,47 +1,51 @@
 // src/app/api/interview/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { callLLM } from '@/lib/llm/client'
+import { callLLMServer } from '@/lib/llm/server'
+import { LLMError } from '@/lib/llm/client'
+import { validateCreds } from '@/lib/llm/validate'
 import { INTERVIEW_PREP_PROMPT } from '@/lib/llm/prompts'
-import type { BYOKCreds, InterviewPrepResult } from '@/types/resume'
+import { sanitizeResumeData } from '@/lib/security/resume-schema'
+import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
+import type { InterviewPrepResult } from '@/types/resume'
 
-// Vercel's default Serverless Function timeout (10s on Hobby) is well
-// under what a slow LLM provider or a chained multi-call analysis action
-// can take. 60s is the max Hobby plan allows; Pro/Enterprise can go higher
-// if you configure a longer timeout for this route in Project Settings.
+// 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { supabase, user } = await getAuthedUser()
+    if (!user) return unauthorized()
+    const limited = limit(limiters.ai, user.id)
+    if (limited) return limited
 
-    const body = await request.json() as {
-      resumeId: string
-      jobDescription: string
-      company?: string
-      role?: string
-      creds: BYOKCreds
+    const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.ai)
+    if (!parsed.ok) return parsed.response
+    const raw = (parsed.data && typeof parsed.data === 'object' ? parsed.data : {}) as Record<string, unknown>
+
+    const v = validateCreds(raw.creds)
+    if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+    if (!isUuid(raw.resumeId) || typeof raw.jobDescription !== 'string' || !raw.jobDescription.trim()) {
+      return NextResponse.json({ error: 'resumeId and jobDescription are required' }, { status: 400 })
     }
+    const company = typeof raw.company === 'string' ? raw.company.slice(0, 100) : ''
+    const role    = typeof raw.role    === 'string' ? raw.role.slice(0, 100)    : ''
 
-    if (!body.resumeId || !body.jobDescription || !body.creds?.apiKey) {
-      return NextResponse.json({ error: 'resumeId, jobDescription, and creds.apiKey are required' }, { status: 400 })
-    }
-
-    // Load resume
+    // Load resume (ownership enforced by the query AND by RLS)
     const { data: resume } = await supabase
-      .from('resumes').select('parsed_data').eq('id', body.resumeId).eq('user_id', user.id).single()
-
+      .from('resumes').select('parsed_data').eq('id', raw.resumeId).eq('user_id', user.id).single()
     if (!resume) return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+    const resumeData = sanitizeResumeData(resume.parsed_data)
+    if (!resumeData) return NextResponse.json({ error: 'Stored resume is malformed' }, { status: 422 })
 
-    const result = await callLLM<InterviewPrepResult>({
-      creds: body.creds,
-      cookieHeader: request.headers.get('cookie') ?? undefined,
+    const result = await callLLMServer<InterviewPrepResult>({
+      creds: v.creds,
       systemPrompt: INTERVIEW_PREP_PROMPT,
-      userPrompt: `Company: ${body.company || 'Unknown'}\nRole: ${body.role || 'Unknown'}\n\nJob Description:\n${body.jobDescription}\n\nResume:\n${JSON.stringify(resume.parsed_data, null, 2)}`,
+      userPrompt: `Company: ${company || 'Unknown'}\nRole: ${role || 'Unknown'}\n\nJob Description:\n${raw.jobDescription.slice(0, 20_000)}\n\nResume:\n${JSON.stringify(resumeData, null, 2)}`,
     })
 
+    if (!Array.isArray(result.questions)) {
+      return NextResponse.json({ error: 'Model returned no interview questions — try again or switch models' }, { status: 422 })
+    }
     // Add checked: false to all questions if not present
     result.questions = result.questions.map((q, i) => ({
       ...q,
@@ -51,7 +55,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ result })
   } catch (err: unknown) {
-    console.error('[POST /api/interview]', err)
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 500 })
+    if (err instanceof LLMError) {
+      const status = err.code === 'auth' ? 401 : err.code === 'rate_limit' ? 429 : err.code === 'timeout' ? 408 : err.code === 'parse' ? 422 : 502
+      return NextResponse.json({ error: err.message }, { status })
+    }
+    console.error('[POST /api/interview]', err instanceof Error ? err.name : 'unknown')
+    return NextResponse.json({ error: 'Interview prep failed' }, { status: 500 })
   }
 }

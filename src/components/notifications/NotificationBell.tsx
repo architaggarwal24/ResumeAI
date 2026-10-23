@@ -1,5 +1,6 @@
 // src/components/notifications/NotificationBell.tsx
 'use client'
+import { safeInternalHref } from '@/lib/security/url'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, X, CheckCheck, Loader2 } from 'lucide-react'
@@ -68,7 +69,8 @@ export function NotificationBell() {
 
   function handleClick(notif: Notification) {
     if (!notif.read) markRead(notif.id)
-    if (notif.href) { router.push(notif.href); setOpen(false) }
+    const dest = safeInternalHref(notif.href)
+    if (dest) { router.push(dest); setOpen(false) }
   }
 
   return (

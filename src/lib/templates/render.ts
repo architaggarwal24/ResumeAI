@@ -1,5 +1,6 @@
 // src/lib/templates/render.ts
 import type { ResumeData, TemplateId, Template } from '@/types/resume'
+import { sanitizeResumeData, isTemplateId } from '@/lib/security/resume-schema'
 
 export const TEMPLATES: Record<TemplateId, Template> = {
   classic:   { id: 'classic',   name: 'Classic',   description: 'Clean traditional format — maximally ATS-safe',       accentColor: '#2563eb' },
@@ -15,6 +16,7 @@ function esc(str?: string | null): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 function bullets(items: Array<{ text: string }> | undefined): string {
@@ -22,17 +24,25 @@ function bullets(items: Array<{ text: string }> | undefined): string {
   return `<ul style="margin:4px 0 0 0;padding-left:18px">${items.map(b => `<li style="margin-bottom:3px">${esc(b.text)}</li>`).join('')}</ul>`
 }
 
+// Renderers interpolate fields into HTML strings that are injected with
+// dangerouslySetInnerHTML (including on the PUBLIC share page). Every field goes
+// through esc() — but data comes from the database / a model reply, so it is
+// also normalised here: wrong types (e.g. `experience` as a string) can no
+// longer throw mid-render, and an unknown templateId falls back to 'classic'.
 export function renderTemplate(templateId: TemplateId, data: ResumeData): string {
-  switch (templateId) {
-    case 'classic':   return renderClassic(data)
-    case 'modern':    return renderModern(data)
-    case 'minimal':   return renderMinimal(data)
-    case 'executive': return renderExecutive(data)
+  const d = sanitizeResumeData(data) ?? sanitizeResumeData({}) as ResumeData
+  switch (isTemplateId(templateId) ? templateId : 'classic') {
+    case 'modern':    return renderModern(d)
+    case 'minimal':   return renderMinimal(d)
+    case 'executive': return renderExecutive(d)
+    case 'classic':
+    default:          return renderClassic(d)
   }
 }
 
 export function renderFullHTML(templateId: TemplateId, data: ResumeData): string {
   const body = renderTemplate(templateId, data)
+  data = sanitizeResumeData(data) ?? sanitizeResumeData({}) as ResumeData
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

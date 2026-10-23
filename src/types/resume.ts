@@ -258,11 +258,8 @@ export interface LLMOptions {
   // A small non-zero value (e.g. 0.4) helps numeric-scoring prompts avoid
   // mode-collapse onto a handful of "favorite" scores at temp=0.
   temperature?: number
-  // Server-side callers only: forward the caller's session cookie (from
-  // request.headers.get('cookie')) so the internal call to /api/llm passes
-  // its auth check. Ignored/unnecessary in the browser, where the same-origin
-  // fetch to /api/llm already carries cookies automatically.
-  cookieHeader?: string
+  // (Removed: server routes use callLLMServer() from '@/lib/llm/server' and never
+  // forward the caller's session cookie.)
 }
 
 // ─── Templates ────────────────────────────────────────────────────────────────

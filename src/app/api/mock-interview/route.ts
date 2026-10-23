@@ -1,119 +1,60 @@
 // src/app/api/mock-interview/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { callLLM } from '@/lib/llm/client'
 import { MOCK_INTERVIEW_SYSTEM_PROMPT, MOCK_INTERVIEW_DEBRIEF_PROMPT } from '@/lib/llm/prompts'
-import type { BYOKCreds, ResumeData, InterviewMessage, MockInterviewDebrief } from '@/types/resume'
+import { LLMError } from '@/lib/llm/client'
+import { callLLMServer, streamLLMText, type ChatTurn } from '@/lib/llm/server'
+import { validateCreds } from '@/lib/llm/validate'
+import { sanitizeResumeData } from '@/lib/security/resume-schema'
+import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
+import type { BYOKCreds, MockInterviewDebrief } from '@/types/resume'
 
-// Vercel's default Serverless Function timeout (10s on Hobby) is well
-// under what a slow LLM provider or a chained multi-call analysis action
-// can take. 60s is the max Hobby plan allows; Pro/Enterprise can go higher
-// if you configure a longer timeout for this route in Project Settings.
+// 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
 
-// Streaming helper — same pattern as /api/chat
-async function streamOpenAICompat(
-  creds: BYOKCreds,
-  systemPrompt: string,
-  messages: Array<{ role: string; content: string }>,
-  signal: AbortSignal
-): Promise<ReadableStream<Uint8Array>> {
-  const urlMap: Record<string, string> = {
-    openai:     'https://api.openai.com/v1/chat/completions',
-    openrouter: 'https://openrouter.ai/api/v1/chat/completions',
-    nvidia:     'https://integrate.api.nvidia.com/v1/chat/completions',
-  }
-  const url = urlMap[creds.provider] || urlMap.openai
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${creds.apiKey}`,
-  }
-  if (creds.provider === 'openrouter') { headers['HTTP-Referer'] = 'https://resumeai.app'; headers['X-Title'] = 'ResumeAI' }
-
-  const res = await fetch(url, {
-    method: 'POST', signal, headers,
-    body: JSON.stringify({
-      model: creds.model, stream: true, max_tokens: 1024,
-      messages: [{ role: 'system', content: systemPrompt }, ...messages],
-    }),
-  })
-  if (!res.ok) throw new Error(`Provider error ${res.status}`)
-  return res.body!
-}
-
-// Convert SSE stream → ReadableStream of text deltas (OpenAI format)
-function toTextStream(rawStream: ReadableStream<Uint8Array>, provider: string): ReadableStream<Uint8Array> {
-  const encoder = new TextEncoder()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  return new ReadableStream({
-    async start(controller) {
-      const reader = rawStream.getReader()
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-          for (const line of lines) {
-            const trimmed = line.trim()
-            if (!trimmed.startsWith('data:')) continue
-            const data = trimmed.slice(5).trim()
-            if (data === '[DONE]') continue
-            try {
-              const json = JSON.parse(data)
-              const delta = provider === 'anthropic'
-                ? json.delta?.text
-                : json.choices?.[0]?.delta?.content
-              if (delta) controller.enqueue(encoder.encode(delta))
-            } catch { /* partial SSE line */ }
-          }
-        }
-      } finally { controller.close() }
-    }
-  })
-}
+const MAX_TURNS = 60
+const MAX_TURN_CHARS = 8000
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user } = await getAuthedUser()
+    if (!user) return unauthorized()
+    const limited = limit(limiters.ai, user.id)
+    if (limited) return limited
 
-    const body = await request.json() as {
-      resumeData: ResumeData
-      creds: BYOKCreds
-      messages: InterviewMessage[]   // full conversation history so far
-      mode: 'chat' | 'debrief'
-      targetRole?: string
+    const parsed = await parseBody<{
+      resumeData?: unknown; creds?: unknown; messages?: unknown; mode?: unknown; targetRole?: unknown
+    }>(request, MAX_BODY.ai)
+    if (!parsed.ok) return parsed.response
+    const body = parsed.data ?? {}
+
+    const v = validateCreds(body.creds)
+    if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+    const creds: BYOKCreds = v.creds
+
+    const resume = sanitizeResumeData(body.resumeData)
+    if (!resume) return NextResponse.json({ error: 'resumeData required' }, { status: 400 })
+
+    if (!Array.isArray(body.messages) || body.messages.length > MAX_TURNS) {
+      return NextResponse.json({ error: 'messages must be an array (max 60)' }, { status: 400 })
     }
+    // Only interviewer/candidate turns are accepted — nothing a caller sends can become a "system" turn.
+    const turns = (body.messages as Array<Record<string, unknown>>)
+      .filter(m => m && (m.role === 'interviewer' || m.role === 'candidate') && typeof m.content === 'string')
+      .map(m => ({ role: m.role as 'interviewer' | 'candidate', content: (m.content as string).slice(0, MAX_TURN_CHARS) }))
 
-    if (!body.creds?.apiKey) {
-      return NextResponse.json({ error: 'API key required' }, { status: 400 })
-    }
-    if (!body.resumeData) {
-      return NextResponse.json({ error: 'resumeData required' }, { status: 400 })
-    }
+    const targetRole = typeof body.targetRole === 'string' ? body.targetRole.slice(0, 200) : ''
+    const systemPrompt = `${MOCK_INTERVIEW_SYSTEM_PROMPT}\n\nCandidate's resume:\n${JSON.stringify(resume, null, 2)}${targetRole ? `\n\nTarget role: ${targetRole}` : ''}`
 
-    // Build the system prompt with resume context injected
-    const systemPrompt = `${MOCK_INTERVIEW_SYSTEM_PROMPT}
-
-Candidate's resume:
-${JSON.stringify(body.resumeData, null, 2)}${body.targetRole ? `\n\nTarget role: ${body.targetRole}` : ''}`
-
-    // ── Debrief mode: generate final JSON analysis from transcript ────────────
+    // ── Debrief mode: final JSON analysis from the transcript ────────────────
     if (body.mode === 'debrief') {
-      const transcript = body.messages
-        .filter(m => m.role === 'interviewer' || m.role === 'candidate')
+      const transcript = turns
         .map(m => `${m.role === 'interviewer' ? 'INTERVIEWER' : 'CANDIDATE'}: ${m.content}`)
         .join('\n\n')
 
-      const result = await callLLM<MockInterviewDebrief>({
-        creds: body.creds,
-        cookieHeader: request.headers.get('cookie') ?? undefined,
+      const result = await callLLMServer<MockInterviewDebrief>({
+        creds,
         systemPrompt: MOCK_INTERVIEW_DEBRIEF_PROMPT,
-        userPrompt: `Candidate resume:\n${JSON.stringify(body.resumeData, null, 2)}\n\nFull interview transcript:\n${transcript}`,
+        userPrompt: `Candidate resume:\n${JSON.stringify(resume, null, 2)}\n\nFull interview transcript:\n${transcript}`,
         maxTokens: 2048,
         temperature: 0.3,
       })
@@ -121,69 +62,28 @@ ${JSON.stringify(body.resumeData, null, 2)}${body.targetRole ? `\n\nTarget role:
     }
 
     // ── Chat mode: stream the interviewer's next response ────────────────────
-    // Convert InterviewMessage[] to the openai-compat messages format
-    // (system is handled separately above)
-    const chatMessages = body.messages
-      .filter(m => m.role === 'interviewer' || m.role === 'candidate')
-      .map(m => ({
-        role: m.role === 'interviewer' ? 'assistant' : 'user',
-        content: m.content,
-      }))
-
-    // Handle Anthropic separately (different streaming format)
-    if (body.creds.provider === 'anthropic') {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        signal: request.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': body.creds.apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: body.creds.model, stream: true, max_tokens: 1024,
-          system: systemPrompt,
-          messages: chatMessages,
-        }),
-      })
-      if (!res.ok) throw new Error(`Anthropic error ${res.status}`)
-      return new NextResponse(toTextStream(res.body!, 'anthropic'), {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Accel-Buffering': 'no' }
-      })
+    const chatMessages: ChatTurn[] = turns.map(m => ({
+      role: m.role === 'interviewer' ? 'assistant' : 'user',
+      content: m.content,
+    }))
+    // The interview opens with an empty history; providers (Anthropic in particular)
+    // require at least one user turn, so seed one.
+    if (chatMessages.length === 0) {
+      chatMessages.push({ role: 'user', content: 'Please begin the interview.' })
     }
 
-    // Gemini — non-streaming fallback (Gemini streaming is more complex)
-    if (body.creds.provider === 'gemini') {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${body.creds.model}:generateContent?key=${body.creds.apiKey}`
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: chatMessages.map(m => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }],
-          })),
-          generationConfig: { maxOutputTokens: 1024 },
-        }),
-        signal: request.signal,
-      })
-      if (!res.ok) throw new Error(`Gemini error ${res.status}`)
-      const d = await res.json() as { candidates: Array<{ content: { parts: Array<{ text: string }> } }> }
-      const text = d.candidates?.[0]?.content?.parts?.[0]?.text || ''
-      return new NextResponse(text, {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-      })
-    }
-
-    // OpenAI / OpenRouter / NVIDIA — streaming
-    const rawStream = await streamOpenAICompat(body.creds, systemPrompt, chatMessages, request.signal)
-    return new NextResponse(toTextStream(rawStream, body.creds.provider), {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Accel-Buffering': 'no' }
+    const stream = await streamLLMText({
+      creds, system: systemPrompt, messages: chatMessages, signal: request.signal, maxTokens: 1024,
     })
-
+    return new NextResponse(stream, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' },
+    })
   } catch (err: unknown) {
-    console.error('[POST /api/mock-interview]', err)
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Interview failed' }, { status: 500 })
+    if (err instanceof LLMError) {
+      const status = err.code === 'auth' ? 401 : err.code === 'rate_limit' ? 429 : 502
+      return NextResponse.json({ error: err.message }, { status })
+    }
+    console.error('[POST /api/mock-interview]', err instanceof Error ? err.name : 'unknown')
+    return NextResponse.json({ error: 'Interview failed' }, { status: 500 })
   }
 }

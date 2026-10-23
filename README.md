@@ -41,7 +41,7 @@ This is a **Next.js 16 full-stack application** — there is no separate Express
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/<your-username>/ResumeAI.git
+git clone https://github.com/architaggarwal24/ResumeAI.git
 cd ResumeAI
 npm install
 ```
@@ -52,6 +52,7 @@ npm install
 2. Open the SQL Editor and run the migrations in order:
    - `supabase/migrations/001_initial.sql` — core schema, tables, and RLS policies
    - `supabase/migrations/002_secure_share_access.sql` — bcrypt-backed password hashing and the `SECURITY DEFINER` function that powers public share links
+   - `supabase/migrations/003_security_hardening.sql` — tighter RLS (`WITH CHECK` on shares/jobs), column-level grants on `users`, share-password brute-force lockout, and `increment_analyses_count()`
 3. In Authentication → URL Configuration, add `http://localhost:3000/auth/callback` (and your production URL, once deployed) to the allowed redirect URLs.
 
 `supabase/migrations/000_reset.sql` wipes and recreates everything from scratch — only run it if you want to start over.
@@ -157,5 +158,13 @@ MIT — see [LICENSE](./LICENSE).
 
 Built by **Archit Aggarwal**.
 
-- Portfolio: [architaggarwal24.github.io](https://architaggarwal24.github.io)
+- Portfolio: [architaggarwal.vercel.app](https://architaggarwal24.github.io)
 - LinkedIn: [linkedin.com/in/architaggarwal24](https://www.linkedin.com/in/architaggarwal24)
+
+## Tests
+
+Pure security helpers (redirect guard, URL validators, resume sanitizer, rate limiter, bounded body reader, LLM credential validation, LaTeX escaping, JSON extraction) have unit tests that run on Node's built-in test runner — no extra dependencies:
+
+```bash
+npm test      # requires Node 22.18+ (native TypeScript type stripping)
+```

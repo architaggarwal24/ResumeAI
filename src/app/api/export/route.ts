@@ -1,27 +1,31 @@
 // src/app/api/export/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { buildResumePdf } from '@/lib/pdf/generate'
-import type { ResumeData, TemplateId } from '@/types/resume'
+import { texEscape } from '@/lib/templates/latex'
+import { sanitizeResumeData, isTemplateId } from '@/lib/security/resume-schema'
+import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
+import type { ResumeData } from '@/types/resume'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user } = await getAuthedUser()
+    if (!user) return unauthorized()
+    const limited = limit(limiters.export, user.id)
+    if (limited) return limited
 
-    const body = await request.json() as {
-      resumeData: ResumeData
-      templateId: TemplateId
-      format: 'pdf' | 'docx' | 'latex'
-    }
+    const parsed = await parseBody<{ resumeData?: unknown; templateId?: unknown; format?: unknown }>(request, MAX_BODY.resume)
+    if (!parsed.ok) return parsed.response
+    const raw = parsed.data ?? {}
 
-    if (!body.resumeData || !body.templateId) {
-      return NextResponse.json({ error: 'resumeData and templateId required' }, { status: 400 })
+    // Normalise untrusted input so the PDF/DOCX/LaTeX builders can't be crashed by wrong shapes.
+    const resumeData = sanitizeResumeData(raw.resumeData)
+    if (!resumeData || !isTemplateId(raw.templateId)) {
+      return NextResponse.json({ error: 'resumeData and a valid templateId are required' }, { status: 400 })
     }
+    const body = { resumeData, templateId: raw.templateId, format: raw.format }
 
     const format   = body.format || 'pdf'
-    const safeName = (body.resumeData.name || 'resume').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
+    const safeName = (body.resumeData.name || 'resume').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) || 'resume'
 
     // ── PDF export ──────────────────────────────────────────────────────────────
     // Pure-JS layout via @react-pdf/renderer (src/lib/pdf/generate.tsx) — not a
@@ -64,25 +68,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Invalid format' }, { status: 400 })
   } catch (err) {
-    console.error('[POST /api/export]', err)
+    console.error('[POST /api/export]', err instanceof Error ? err.name : 'unknown')
     return NextResponse.json({ error: 'Export failed' }, { status: 500 })
   }
 }
 
 // ── LaTeX builder ────────────────────────────────────────────────────────────────
-// Escapes LaTeX's special characters — without this, a resume bullet like
-// "cut costs by 30% using R&D data" would fail to compile (% starts a comment,
-// & is a table column separator). Order matters: backslash must be escaped
-// before the replacements that introduce new literal backslashes.
-function texEscape(s: string): string {
-  if (!s) return ''
-  return s
-    .replace(/\\/g, '\\textbackslash{}')
-    .replace(/([&%$#_{}])/g, '\\$1')
-    .replace(/~/g, '\\textasciitilde{}')
-    .replace(/\^/g, '\\textasciicircum{}')
-}
-
+// Text escaping lives in lib/templates/latex.ts (single-pass, unit-tested).
 // Produces a self-contained .tex file that compiles with only geometry,
 // enumitem and fontenc — all part of any standard TeX Live/MiKTeX install
 // and Overleaf's default template, so it compiles with no extra setup.

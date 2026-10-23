@@ -1,7 +1,10 @@
 // src/app/api/analyze/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { callLLM } from '@/lib/llm/client'
+import { validateCreds } from '@/lib/llm/validate'
+import { sanitizeResumeData } from '@/lib/security/resume-schema'
+import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { callLLMServer } from '@/lib/llm/server'
+import { LLMError } from '@/lib/llm/client'
 import { SCORE_CORE_PROMPT, SCORE_ENRICHMENT_PROMPT, SUGGEST_PROMPT, POINTER_SUGGEST_PROMPT, GENERATE_SECTION_PROMPT, IMPROVE_SECTION_PROMPT } from '@/lib/llm/prompts'
 import type { BYOKCreds, ResumeData, AnalysisResult, ATSResult, PointerSuggestionResult, GenerateSectionResult, GeneratableSection, SectionImproveResult } from '@/types/resume'
 
@@ -75,26 +78,45 @@ function fallbackVerdict(): AnalysisResult['recruiterVerdict'] {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { supabase, user } = await getAuthedUser()
+    if (!user) return unauthorized()
+    const limited = limit(limiters.ai, user.id)
+    if (limited) return limited
 
-    const body = await request.json() as {
-      resumeId: string
-      resumeData: ResumeData
-      jobDescription?: string
-      creds: BYOKCreds
-      type: 'score' | 'ats' | 'pointer' | 'generate_section' | 'improve_section'
-      pointer?: { targetId: string; currentText: string; sectionContext: string; currentAtsScore?: number | null }
-      section?: GeneratableSection
-      currentAtsScore?: number | null
+    const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.ai)
+    if (!parsed.ok) return parsed.response
+    const raw = (parsed.data && typeof parsed.data === 'object' ? parsed.data : {}) as Record<string, unknown>
+
+    // Everything below is untrusted browser input: validate shape and bound sizes.
+    const v = validateCreds(raw.creds)
+    if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+    const resumeData = sanitizeResumeData(raw.resumeData)
+    if (!resumeData) return NextResponse.json({ error: 'resumeData is required' }, { status: 400 })
+
+    const TYPES = ['score', 'ats', 'pointer', 'generate_section', 'improve_section'] as const
+    const SECTIONS = ['summary', 'experience', 'education', 'projects', 'skills'] as const
+    const rawPointer = (raw.pointer && typeof raw.pointer === 'object' ? raw.pointer : null) as Record<string, unknown> | null
+
+    const body = {
+      type: (TYPES as readonly unknown[]).includes(raw.type) ? raw.type as typeof TYPES[number] : undefined,
+      resumeId: isUuid(raw.resumeId) ? raw.resumeId : undefined,
+      resumeData,
+      creds: v.creds as BYOKCreds,
+      jobDescription: typeof raw.jobDescription === 'string' && raw.jobDescription.trim() ? raw.jobDescription.slice(0, 20_000) : undefined,
+      section: (SECTIONS as readonly unknown[]).includes(raw.section) ? raw.section as GeneratableSection : undefined,
+      pointer: rawPointer && typeof rawPointer.targetId === 'string' && typeof rawPointer.currentText === 'string'
+        ? {
+            targetId: rawPointer.targetId.slice(0, 64),
+            currentText: rawPointer.currentText.slice(0, 2000),
+            sectionContext: typeof rawPointer.sectionContext === 'string' ? rawPointer.sectionContext.slice(0, 100) : '',
+          }
+        : undefined,
     }
 
-    if (!body.resumeData || !body.creds?.apiKey) {
-      return NextResponse.json({ error: 'resumeData and creds.apiKey are required' }, { status: 400 })
+    // A supplied resumeId must be a well-formed UUID that this user owns.
+    if (raw.resumeId !== undefined && raw.resumeId !== null && raw.resumeId !== '' && !body.resumeId) {
+      return NextResponse.json({ error: 'Invalid resumeId' }, { status: 400 })
     }
-
-    // Verify resume ownership
     if (body.resumeId) {
       const { data: resume } = await supabase
         .from('resumes')
@@ -115,9 +137,8 @@ export async function POST(request: NextRequest) {
       // smaller, critical call — atsScore is computed server-side from the
       // section scores it returns, so it's always mathematically consistent
       // and never a hallucinated guess.
-      const coreResult = await callLLM<Pick<AnalysisResult, 'sections' | 'recruiterVerdict'>>({
+      const coreResult = await callLLMServer<Pick<AnalysisResult, 'sections' | 'recruiterVerdict'>>({
         creds: body.creds,
-        cookieHeader: request.headers.get('cookie') ?? undefined,
         systemPrompt: SCORE_CORE_PROMPT,
         userPrompt: resumeBlock,
         maxTokens: 2560,
@@ -143,11 +164,10 @@ export async function POST(request: NextRequest) {
       // fails or times out we still return a fully usable result from call 1
       // rather than failing the whole analysis.
       try {
-        const enrichment = await callLLM<Pick<AnalysisResult,
+        const enrichment = await callLLMServer<Pick<AnalysisResult,
           'missingKeywords' | 'topWins' | 'topFixes' | 'buzzwordsToRemove' | 'trendingSkills'
         >>({
           creds: body.creds,
-          cookieHeader: request.headers.get('cookie') ?? undefined,
           systemPrompt: SCORE_ENRICHMENT_PROMPT,
           userPrompt: resumeBlock,
           maxTokens: 2048,
@@ -155,7 +175,7 @@ export async function POST(request: NextRequest) {
         })
         result.missingKeywords   = asStringArray(enrichment.missingKeywords)
         result.topWins           = asStringArray(enrichment.topWins)
-        result.topFixes          = enrichment.topFixes ?? []
+        result.topFixes          = Array.isArray(enrichment.topFixes) ? enrichment.topFixes : []
         result.buzzwordsToRemove = asStringArray(enrichment.buzzwordsToRemove)
         result.trendingSkills    = asStringArray(enrichment.trendingSkills)
       } catch (enrichErr) {
@@ -175,7 +195,8 @@ export async function POST(request: NextRequest) {
           .from('resumes')
           .update({ ats_score: result.atsScore })
           .eq('id', body.resumeId)
-        await supabase.rpc('increment_analyses_count', { user_id: user.id })
+        const { error: countErr } = await supabase.rpc('increment_analyses_count')
+        if (countErr) console.error('[POST /api/analyze] increment_analyses_count:', countErr.code)
       }
 
       return NextResponse.json({ result })
@@ -187,9 +208,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'jobDescription required for ATS analysis' }, { status: 400 })
       }
 
-      const result = await callLLM<ATSResult>({
+      const result = await callLLMServer<ATSResult>({
         creds: body.creds,
-        cookieHeader: request.headers.get('cookie') ?? undefined,
         systemPrompt: SUGGEST_PROMPT,
         userPrompt: `Job Description:\n${body.jobDescription}\n\nResume:\n${JSON.stringify(body.resumeData, null, 2)}`,
         maxTokens: 3072,
@@ -231,9 +251,8 @@ export async function POST(request: NextRequest) {
         skills: body.resumeData.skills,
       }
 
-      const result = await callLLM<PointerSuggestionResult>({
+      const result = await callLLMServer<PointerSuggestionResult>({
         creds: body.creds,
-        cookieHeader: request.headers.get('cookie') ?? undefined,
         systemPrompt: POINTER_SUGGEST_PROMPT,
         userPrompt: `Resume context:\n${JSON.stringify(minimalContext, null, 2)}${jdBlock}\n\nLine to improve:\n"${body.pointer.currentText}"`,
         maxTokens: 512,
@@ -258,9 +277,8 @@ export async function POST(request: NextRequest) {
         ? `\n\nTarget job description (use for positioning/keywords):\n${body.jobDescription}`
         : ''
 
-      const result = await callLLM<GenerateSectionResult>({
+      const result = await callLLMServer<GenerateSectionResult>({
         creds: body.creds,
-        cookieHeader: request.headers.get('cookie') ?? undefined,
         systemPrompt: GENERATE_SECTION_PROMPT,
         userPrompt: `Full resume (for context):\n${JSON.stringify(body.resumeData, null, 2)}${jdBlock}\n\nGenerate content for the "${body.section}" section, which is currently empty or near-empty.`,
         maxTokens: 2048,
@@ -284,9 +302,8 @@ export async function POST(request: NextRequest) {
         ? `\n\nTarget job description (use for keyword alignment):\n${body.jobDescription}`
         : ''
 
-      const result = await callLLM<SectionImproveResult>({
+      const result = await callLLMServer<SectionImproveResult>({
         creds: body.creds,
-        cookieHeader: request.headers.get('cookie') ?? undefined,
         systemPrompt: IMPROVE_SECTION_PROMPT,
         userPrompt: `Full resume (for context):\n${JSON.stringify(body.resumeData, null, 2)}${jdBlock}\n\nImprove the "${body.section}" section.`,
         maxTokens: 2048,
@@ -298,9 +315,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Analysis failed'
-    console.error('[POST /api/analyze]', err instanceof Error ? `${err.name}: ${message}` : err)
-    const status = message.includes('Invalid') && message.includes('key') ? 401 : 500
-    return NextResponse.json({ error: message }, { status })
+    // LLMError messages are safe to show (provider/model guidance). Anything else stays server-side.
+    if (err instanceof LLMError) {
+      const status = err.code === 'auth' ? 401 : err.code === 'rate_limit' ? 429 : err.code === 'timeout' ? 408 : err.code === 'parse' ? 422 : 502
+      return NextResponse.json({ error: err.message }, { status })
+    }
+    console.error('[POST /api/analyze]', err instanceof Error ? err.name : 'unknown')
+    return NextResponse.json({ error: 'Analysis failed' }, { status: 500 })
   }
 }

@@ -1,5 +1,6 @@
 // src/app/(app)/jobs/page.tsx
 'use client'
+import { safeHttpUrl } from '@/lib/security/url'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn, formatDate } from '@/lib/utils'
@@ -226,7 +227,7 @@ export default function JobsPage() {
                         {menuOpen===job.id && (
                           <div className="absolute right-0 top-6 bg-[#1c1c24] border border-white/10 rounded-xl shadow-xl z-20 py-1 w-44 fade-in" onClick={e=>e.stopPropagation()}>
                             <button onClick={()=>{setEditing(job);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><Edit2 size={11}/>Edit</button>
-                            {job.url && <a href={job.url} target="_blank" rel="noopener" className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><ExternalLink size={11}/>View Posting</a>}
+                            {safeHttpUrl(job.url) && <a href={safeHttpUrl(job.url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><ExternalLink size={11}/>View Posting</a>}
                             {job.resume_id && <button onClick={()=>{router.push(`/resume/${job.resume_id}`);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><FileText size={11}/>Open Resume</button>}
                             <button onClick={()=>{tailorResume(job);setMenuOpen(null)}} disabled={tailoring===job.id} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-violet-300 hover:bg-violet-500/10 disabled:opacity-50"><Wand2 size={11}/>{tailoring===job.id?'Tailoring…':'Tailor Resume'}</button>
                             <button onClick={()=>{router.push(`/interview/${job.id}`);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><MessageSquare size={11}/>Interview Prep</button>

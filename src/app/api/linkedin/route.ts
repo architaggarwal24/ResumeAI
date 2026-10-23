@@ -1,15 +1,16 @@
 // src/app/api/linkedin/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { callLLM } from '@/lib/llm/client'
+import { callLLMServer } from '@/lib/llm/server'
+import { LLMError } from '@/lib/llm/client'
+import { validateCreds } from '@/lib/llm/validate'
 import { LINKEDIN_PARSE_PROMPT } from '@/lib/llm/prompts'
-import type { BYOKCreds, ResumeData } from '@/types/resume'
+import { sanitizeResumeData } from '@/lib/security/resume-schema'
+import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
 
-// Vercel's default Serverless Function timeout (10s on Hobby) is well
-// under what a slow LLM provider or a chained multi-call analysis action
-// can take. 60s is the max Hobby plan allows; Pro/Enterprise can go higher
-// if you configure a longer timeout for this route in Project Settings.
+// 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
+
+const MAX_HTML_BYTES = 2 * 1024 * 1024
 
 function extractLinkedInText(html: string): string {
   return html
@@ -27,48 +28,77 @@ function extractLinkedInText(html: string): string {
 
 function normalizeLinkedInUrl(input: string): string {
   const t = input.trim()
-  if (t.startsWith('http')) return t
+  if (/^https?:\/\//i.test(t)) return t
   if (t.startsWith('/in/')) return `https://www.linkedin.com${t}`
   if (t.startsWith('in/')) return `https://www.linkedin.com/${t}`
   return `https://www.linkedin.com/in/${t.replace(/^@/, '')}`
 }
 
+// Read at most `max` bytes of the response body.
+async function readTextLimited(res: Response, max: number): Promise<string> {
+  if (!res.body) return ''
+  const reader = res.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.byteLength
+    if (total > max) { await reader.cancel().catch(() => {}); break }
+    chunks.push(value)
+  }
+  const buf = new Uint8Array(chunks.reduce((n, c) => n + c.byteLength, 0))
+  let off = 0
+  for (const c of chunks) { buf.set(c, off); off += c.byteLength }
+  return new TextDecoder().decode(buf)
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user } = await getAuthedUser()
+    if (!user) return unauthorized()
+    const limited = limit(limiters.ai, user.id)
+    if (limited) return limited
 
-    const body = await request.json() as { url: string; creds: BYOKCreds; rawText?: string }
+    const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.small * 4)
+    if (!parsed.ok) return parsed.response
+    const body = (parsed.data && typeof parsed.data === 'object' ? parsed.data : {}) as Record<string, unknown>
 
-    if (!body.creds?.apiKey) return NextResponse.json({ error: 'API key is required' }, { status: 400 })
+    const v = validateCreds(body.creds)
+    if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
 
     // ── Manual paste mode (fallback) ─────────────────────────────────────────
-    if (body.rawText) {
-      const parsed = await callLLM<ResumeData>({
-        creds: body.creds,
-        cookieHeader: request.headers.get('cookie') ?? undefined,
+    if (typeof body.rawText === 'string' && body.rawText) {
+      const rawText = body.rawText.slice(0, 12000)
+      const out = await callLLMServer<Record<string, unknown>>({
+        creds: v.creds,
         systemPrompt: LINKEDIN_PARSE_PROMPT,
-        userPrompt: `LinkedIn profile text (manually pasted):\n\n${body.rawText.slice(0, 12000)}`,
+        userPrompt: `LinkedIn profile text (manually pasted):\n\n${rawText}`,
       })
-      return NextResponse.json({ resumeData: parsed, rawText: body.rawText, confidence: 'medium', warnings: [] })
+      const resumeData = sanitizeResumeData(out)
+      if (!resumeData) return NextResponse.json({ error: 'Model returned an unusable resume' }, { status: 422 })
+      return NextResponse.json({ resumeData, rawText, confidence: 'medium', warnings: [] })
     }
 
     // ── URL fetch mode ────────────────────────────────────────────────────────
-    if (!body.url?.trim()) return NextResponse.json({ error: 'URL or rawText is required' }, { status: 400 })
+    if (typeof body.url !== 'string' || !body.url.trim() || body.url.length > 300) {
+      return NextResponse.json({ error: 'URL or rawText is required' }, { status: 400 })
+    }
 
-    const profileUrl = normalizeLinkedInUrl(body.url)
-
+    const invalid = () => NextResponse.json({ error: 'Enter a valid LinkedIn profile URL (linkedin.com/in/username)' }, { status: 400 })
     let parsedUrl: URL
     try {
-      parsedUrl = new URL(profileUrl)
+      parsedUrl = new URL(normalizeLinkedInUrl(body.url))
     } catch {
-      return NextResponse.json({ error: 'Enter a valid LinkedIn profile URL (linkedin.com/in/username)' }, { status: 400 })
+      return invalid()
     }
+    // https only, exact LinkedIn host, no credentials/port, profile path only.
     const isLinkedInHost = parsedUrl.hostname === 'www.linkedin.com' || parsedUrl.hostname === 'linkedin.com'
-    if (!isLinkedInHost || !parsedUrl.pathname.startsWith('/in/')) {
-      return NextResponse.json({ error: 'Enter a valid LinkedIn profile URL (linkedin.com/in/username)' }, { status: 400 })
+    if (parsedUrl.protocol !== 'https:' || !isLinkedInHost || parsedUrl.username || parsedUrl.password || parsedUrl.port
+        || !parsedUrl.pathname.startsWith('/in/')) {
+      return invalid()
     }
+    const profileUrl = parsedUrl.href
 
     let html: string
     try {
@@ -79,14 +109,20 @@ export async function POST(request: NextRequest) {
           'Accept-Language': 'en-US,en;q=0.5',
           'Cache-Control': 'no-cache',
         },
+        // Never follow redirects: a redirect (e.g. via an open redirect on the
+        // host) must not be able to steer this server-side fetch elsewhere.
+        redirect: 'manual',
         signal: AbortSignal.timeout(15_000),
       })
+      if (res.status >= 300 && res.status < 400) {
+        return NextResponse.json({ error: 'LinkedIn redirected the request. Use the manual paste option.', fallback: true }, { status: 422 })
+      }
       if (!res.ok) {
         if (res.status === 404) return NextResponse.json({ error: 'Profile not found. Check the URL and make sure the profile is public.', fallback: true }, { status: 404 })
         if (res.status === 999 || res.status === 429) return NextResponse.json({ error: 'LinkedIn is blocking automated access. Use the manual paste option.', fallback: true }, { status: 429 })
         return NextResponse.json({ error: `LinkedIn returned ${res.status}. Use manual paste.`, fallback: true }, { status: 422 })
       }
-      html = await res.text()
+      html = await readTextLimited(res, MAX_HTML_BYTES)
     } catch (err: unknown) {
       const name = (err as { name?: string }).name
       if (name === 'TimeoutError' || name === 'AbortError') {
@@ -105,16 +141,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Could not extract enough content. Use the manual paste option.', fallback: true }, { status: 422 })
     }
 
-    const parsed = await callLLM<ResumeData>({
-      creds: body.creds,
-      cookieHeader: request.headers.get('cookie') ?? undefined,
+    const out = await callLLMServer<Record<string, unknown>>({
+      creds: v.creds,
       systemPrompt: LINKEDIN_PARSE_PROMPT,
       userPrompt: `LinkedIn profile URL: ${profileUrl}\n\nExtracted text:\n${rawText}`,
     })
+    const resumeData = sanitizeResumeData(out)
+    if (!resumeData) return NextResponse.json({ error: 'Model returned an unusable resume' }, { status: 422 })
 
-    return NextResponse.json({ resumeData: parsed, rawText, profileUrl, confidence: 'high', warnings: [] })
+    return NextResponse.json({ resumeData, rawText, profileUrl, confidence: 'high', warnings: [] })
   } catch (err: unknown) {
-    console.error('[POST /api/linkedin]', err)
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Import failed' }, { status: 500 })
+    if (err instanceof LLMError) {
+      const status = err.code === 'auth' ? 401 : err.code === 'rate_limit' ? 429 : err.code === 'timeout' ? 408 : err.code === 'parse' ? 422 : 502
+      return NextResponse.json({ error: err.message }, { status })
+    }
+    console.error('[POST /api/linkedin]', err instanceof Error ? err.name : 'unknown')
+    return NextResponse.json({ error: 'Import failed' }, { status: 500 })
   }
 }

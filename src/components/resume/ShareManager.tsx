@@ -23,6 +23,7 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
   const [password, setPassword] = useState('')
   const [expireDays, setExpire] = useState('')
   const [copied, setCopied]     = useState<string | null>(null)
+  const [error, setError]       = useState('')
 
   useEffect(() => {
     fetch(`/api/share?resumeId=${resumeId}`)
@@ -32,7 +33,7 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
   }, [resumeId])
 
   async function createShare() {
-    setCreating(true)
+    setCreating(true); setError('')
     try {
       const res = await fetch('/api/share', {
         method: 'POST',
@@ -43,10 +44,14 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
           expiresInDays: expireDays ? parseInt(expireDays) : undefined,
         }),
       })
-      const data = await res.json()
-      setShares(p => [{ ...data.share, url: data.url }, ...p])
-      setShowForm(false); setPassword(''); setExpire('')
-    } catch { /* ignore */ }
+      const data = await res.json().catch(() => ({})) as { share?: Share; url?: string; error?: string }
+      if (!res.ok || !data.share) {
+        setError(data.error || 'Could not create the link')
+      } else {
+        setShares(p => [{ ...data.share!, url: data.url ?? data.share!.url }, ...p])
+        setShowForm(false); setPassword(''); setExpire('')
+      }
+    } catch { setError('Could not create the link') }
     setCreating(false)
   }
 
@@ -81,16 +86,17 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
             <div>
               <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1"><Lock size={10}/>Password (optional)</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                placeholder="Leave blank for public"
+                placeholder="Leave blank for public (min 6 chars)" minLength={6} maxLength={128} autoComplete="new-password"
                 className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
             </div>
             <div>
               <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1"><Calendar size={10}/>Expires in (days)</label>
-              <input type="number" value={expireDays} onChange={e => setExpire(e.target.value)}
+              <input type="number" min={1} max={365} step={1} value={expireDays} onChange={e => setExpire(e.target.value)}
                 placeholder="Never"
                 className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
             </div>
           </div>
+          {error && <p role="alert" className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2 mb-3">{error}</p>}
           <div className="flex gap-2">
             <Button variant="primary" size="sm" onClick={createShare} loading={creating}>
               Create Link

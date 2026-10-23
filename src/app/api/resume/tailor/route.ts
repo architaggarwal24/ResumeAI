@@ -1,60 +1,69 @@
 // src/app/api/resume/tailor/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { callLLM } from '@/lib/llm/client'
+import { callLLMServer } from '@/lib/llm/server'
+import { LLMError } from '@/lib/llm/client'
+import { validateCreds } from '@/lib/llm/validate'
 import { TAILOR_PROMPT } from '@/lib/llm/prompts'
-import type { BYOKCreds, ResumeData } from '@/types/resume'
+import { sanitizeResumeData } from '@/lib/security/resume-schema'
+import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
 
-// Vercel's default Serverless Function timeout (10s on Hobby) is well
-// under what a slow LLM provider or a chained multi-call analysis action
-// can take. 60s is the max Hobby plan allows; Pro/Enterprise can go higher
-// if you configure a longer timeout for this route in Project Settings.
+// 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { supabase, user } = await getAuthedUser()
+    if (!user) return unauthorized()
+    const limited = limit(limiters.ai, user.id)
+    if (limited) return limited
 
-    const body = await request.json() as {
-      resumeId: string
-      jobDescription: string
-      jobTitle?: string
-      company?: string
-      jobApplicationId?: string
-      creds: BYOKCreds
+    const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.ai)
+    if (!parsed.ok) return parsed.response
+    const raw = (parsed.data && typeof parsed.data === 'object' ? parsed.data : {}) as Record<string, unknown>
+
+    const v = validateCreds(raw.creds)
+    if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+    if (!isUuid(raw.resumeId) || typeof raw.jobDescription !== 'string' || !raw.jobDescription.trim()) {
+      return NextResponse.json({ error: 'resumeId and jobDescription are required' }, { status: 400 })
     }
+    const jobDescription = raw.jobDescription.slice(0, 20_000)
+    const company  = typeof raw.company  === 'string' ? raw.company.trim().slice(0, 100)  : ''
+    const jobTitle = typeof raw.jobTitle === 'string' ? raw.jobTitle.trim().slice(0, 100) : ''
+    const jobApplicationId = isUuid(raw.jobApplicationId) ? raw.jobApplicationId : null
 
-    if (!body.resumeId || !body.jobDescription || !body.creds?.apiKey) {
-      return NextResponse.json({ error: 'resumeId, jobDescription, and creds.apiKey are required' }, { status: 400 })
-    }
-
-    // Load source resume
+    // Load source resume (ownership enforced by the query AND by RLS)
     const { data: source } = await supabase
       .from('resumes')
       .select('*')
-      .eq('id', body.resumeId)
+      .eq('id', raw.resumeId)
       .eq('user_id', user.id)
       .single()
 
     if (!source) return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
 
-    // Tailor with LLM
-    const tailored = await callLLM<ResumeData>({
-      creds: body.creds,
-      cookieHeader: request.headers.get('cookie') ?? undefined,
-      systemPrompt: TAILOR_PROMPT,
-      userPrompt: `Job Description:\n${body.jobDescription}\n\nBase Resume:\n${JSON.stringify(source.parsed_data, null, 2)}`,
-    })
+    const sourceData = sanitizeResumeData(source.parsed_data)
+    if (!sourceData) return NextResponse.json({ error: 'Stored resume is malformed' }, { status: 422 })
 
-    // Build name for the tailored clone
-    const suffix = body.company
-      ? ` — ${body.company}`
-      : body.jobTitle
-      ? ` — ${body.jobTitle}`
-      : ' (Tailored)'
-    const tailoredName = `${source.name}${suffix}`
+    // Tailor with LLM
+    const tailoredRaw = await callLLMServer<Record<string, unknown>>({
+      creds: v.creds,
+      systemPrompt: TAILOR_PROMPT,
+      userPrompt: `Job Description:\n${jobDescription}\n\nBase Resume:\n${JSON.stringify(sourceData, null, 2)}`,
+    })
+    // Model output is untrusted (a hostile job posting can steer it): normalise before storing.
+    const tailored = sanitizeResumeData(tailoredRaw)
+    if (!tailored) return NextResponse.json({ error: 'Model returned an unusable resume' }, { status: 422 })
+
+    const suffix = company ? ` — ${company}` : jobTitle ? ` — ${jobTitle}` : ' (Tailored)'
+    const tailoredName = `${String(source.name ?? 'Resume')}${suffix}`.slice(0, 200)
+
+    // Snapshot the source resume before tailoring (non-critical)
+    await supabase.from('resume_versions').insert({
+      resume_id: source.id,
+      label: `Before tailoring for ${company || jobTitle || 'job'}`.slice(0, 200),
+      parsed_data: sourceData,
+      ats_score: source.ats_score,
+    })
 
     // Save as new resume
     const { data: newResume, error } = await supabase
@@ -71,28 +80,22 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
 
-    // Link to job application if provided
-    if (body.jobApplicationId) {
+    // Link to job application if provided (scoped to this user)
+    if (jobApplicationId) {
       await supabase
         .from('job_applications')
         .update({ resume_id: newResume.id })
-        .eq('id', body.jobApplicationId)
+        .eq('id', jobApplicationId)
         .eq('user_id', user.id)
     }
 
-    // Snapshot the source resume before tailoring
-    try {
-      await supabase.from('resume_versions').insert({
-        resume_id: source.id,
-        label: `Before tailoring for ${body.company || body.jobTitle || 'job'}`,
-        parsed_data: source.parsed_data,
-        ats_score: source.ats_score,
-      })
-    } catch { /* non-critical */ }
-
     return NextResponse.json({ resume: newResume, tailoredName }, { status: 201 })
   } catch (err: unknown) {
-    console.error('[POST /api/resume/tailor]', err)
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Tailoring failed' }, { status: 500 })
+    if (err instanceof LLMError) {
+      const status = err.code === 'auth' ? 401 : err.code === 'rate_limit' ? 429 : err.code === 'timeout' ? 408 : err.code === 'parse' ? 422 : 502
+      return NextResponse.json({ error: err.message }, { status })
+    }
+    console.error('[POST /api/resume/tailor]', err instanceof Error ? err.name : 'unknown')
+    return NextResponse.json({ error: 'Tailoring failed' }, { status: 500 })
   }
 }

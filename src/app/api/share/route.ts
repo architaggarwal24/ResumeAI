@@ -1,21 +1,25 @@
 // src/app/api/share/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { randomBytes } from 'crypto'
+import { getAuthedUser, unauthorized, limit, limiters, parseBody, ownsResume, isUuid, MAX_BODY } from '@/lib/security/guards'
+
+const MIN_SHARE_PASSWORD = 6
+const MAX_SHARE_PASSWORD = 128   // bcrypt only uses the first 72 bytes; cap well above that
+const MAX_EXPIRY_DAYS = 365
+const MAX_SHARES_PER_RESUME = 25
 
 function generateSlug(): string {
-  return randomBytes(6).toString('base64url')
+  return randomBytes(9).toString('base64url') // 72 bits (was 48)
 }
 
 // GET /api/share?resumeId=xxx — get existing shares for a resume
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { supabase, user } = await getAuthedUser()
+    if (!user) return unauthorized()
 
     const resumeId = request.nextUrl.searchParams.get('resumeId')
-    if (!resumeId) return NextResponse.json({ error: 'resumeId required' }, { status: 400 })
+    if (!isUuid(resumeId)) return NextResponse.json({ error: 'resumeId required' }, { status: 400 })
 
     const { data } = await supabase
       .from('resume_shares')
@@ -43,55 +47,79 @@ export async function GET(request: NextRequest) {
 // POST /api/share — create a share link
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { supabase, user } = await getAuthedUser()
+    if (!user) return unauthorized()
+    const limited = limit(limiters.shareCreate, user.id)
+    if (limited) return limited
 
-    const body = await request.json() as {
-      resumeId: string
-      password?: string
-      expiresInDays?: number
-    }
+    const parsed = await parseBody<{ resumeId?: unknown; password?: unknown; expiresInDays?: unknown }>(request, MAX_BODY.small)
+    if (!parsed.ok) return parsed.response
+    const body = parsed.data ?? {}
 
-    if (!body.resumeId) return NextResponse.json({ error: 'resumeId required' }, { status: 400 })
+    if (!isUuid(body.resumeId)) return NextResponse.json({ error: 'resumeId required' }, { status: 400 })
 
     // Verify ownership
-    const { data: resume } = await supabase
-      .from('resumes').select('id').eq('id', body.resumeId).eq('user_id', user.id).single()
-    if (!resume) return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+    if (!(await ownsResume(supabase, body.resumeId, user.id))) {
+      return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+    }
+
+    const { count } = await supabase.from('resume_shares').select('id', { count: 'exact', head: true }).eq('resume_id', body.resumeId)
+    if ((count ?? 0) >= MAX_SHARES_PER_RESUME) {
+      return NextResponse.json({ error: `Share link limit reached (${MAX_SHARES_PER_RESUME}). Revoke old links first.` }, { status: 409 })
+    }
+
+    // Password: optional, but if present it must be a real password.
+    let password: string | null = null
+    if (body.password !== undefined && body.password !== null && body.password !== '') {
+      if (typeof body.password !== 'string' || body.password.length < MIN_SHARE_PASSWORD || body.password.length > MAX_SHARE_PASSWORD) {
+        return NextResponse.json({ error: `Password must be ${MIN_SHARE_PASSWORD}–${MAX_SHARE_PASSWORD} characters` }, { status: 400 })
+      }
+      password = body.password
+    }
+
+    // Expiry: a positive whole number of days, bounded (previously unvalidated; huge or
+    // negative values produced an Invalid Date and a 500).
+    let expiresAt: string | null = null
+    if (body.expiresInDays !== undefined && body.expiresInDays !== null && body.expiresInDays !== '') {
+      const days = body.expiresInDays
+      if (typeof days !== 'number' || !Number.isInteger(days) || days < 1 || days > MAX_EXPIRY_DAYS) {
+        return NextResponse.json({ error: `Expiry must be a whole number of days from 1 to ${MAX_EXPIRY_DAYS}` }, { status: 400 })
+      }
+      expiresAt = new Date(Date.now() + days * 86400 * 1000).toISOString()
+    }
 
     const slug = generateSlug()
 
-    // Bcrypt via Postgres pgcrypto (supabase/migrations/002_secure_share_access.sql) —
-    // replaces the old unsalted SHA-256 + NEXT_PUBLIC_ "pepper", which shipped to
-    // the browser and therefore wasn't a secret at all.
+    // Bcrypt via Postgres pgcrypto (supabase/migrations/002_secure_share_access.sql).
     let passwordHash: string | null = null
-    if (body.password) {
-      const { data: hash, error: hashError } = await supabase.rpc('hash_share_password', { p_password: body.password })
+    if (password) {
+      const { data: hash, error: hashError } = await supabase.rpc('hash_share_password', { p_password: password })
       if (hashError || typeof hash !== 'string') {
-        console.error('[POST /api/share] hash_share_password failed:', hashError)
+        console.error('[POST /api/share] hash_share_password failed:', hashError?.code)
         return NextResponse.json({ error: 'Failed to create share' }, { status: 500 })
       }
       passwordHash = hash
     }
 
-    const expiresAt    = body.expiresInDays
-      ? new Date(Date.now() + body.expiresInDays * 86400 * 1000).toISOString()
-      : null
-
     const { data, error } = await supabase
       .from('resume_shares')
       .insert({ resume_id: body.resumeId, user_id: user.id, slug, password_hash: passwordHash, expires_at: expiresAt })
-      .select().single()
+      .select('id, slug, view_count, expires_at, created_at')
+      .single()
 
-    if (error) throw error
+    if (error || !data) throw error ?? new Error('insert failed')
 
+    // Same camelCase shape as GET, and never the password hash.
+    const url = `${request.nextUrl.origin}/s/${slug}`
     return NextResponse.json({
-      share: { ...data, hasPassword: !!passwordHash },
-      url: `${request.nextUrl.origin}/s/${slug}`,
+      share: {
+        id: data.id, slug: data.slug, viewCount: data.view_count ?? 0,
+        expiresAt: data.expires_at, hasPassword: !!passwordHash, createdAt: data.created_at, url,
+      },
+      url,
     }, { status: 201 })
   } catch (err) {
-    console.error('[POST /api/share]', err)
+    console.error('[POST /api/share]', err instanceof Error ? err.name : 'unknown')
     return NextResponse.json({ error: 'Failed to create share' }, { status: 500 })
   }
 }
@@ -99,12 +127,11 @@ export async function POST(request: NextRequest) {
 // DELETE /api/share?id=xxx — revoke a share
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { supabase, user } = await getAuthedUser()
+    if (!user) return unauthorized()
 
     const id = request.nextUrl.searchParams.get('id')
-    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+    if (!isUuid(id)) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
     await supabase.from('resume_shares').delete().eq('id', id).eq('user_id', user.id)
     return NextResponse.json({ success: true })

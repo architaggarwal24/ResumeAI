@@ -1,14 +1,16 @@
 // src/app/api/notifications/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { safeInternalHref } from '@/lib/security/url'
+import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
 import type { NotificationType } from '@/types/resume'
+
+const TYPES: readonly NotificationType[] = ['score_ready', 'score_drop', 'score_improve', 'job_followup', 'resume_stale', 'share_viewed', 'system']
 
 // GET /api/notifications — fetch recent notifications
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { supabase, user } = await getAuthedUser()
+    if (!user) return unauthorized()
 
     const unreadOnly = request.nextUrl.searchParams.get('unread') === 'true'
 
@@ -34,20 +36,29 @@ export async function GET(request: NextRequest) {
 // POST /api/notifications — create a notification (internal use)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { supabase, user } = await getAuthedUser()
+    if (!user) return unauthorized()
+    const limited = limit(limiters.write, user.id)
+    if (limited) return limited
 
-    const body = await request.json() as {
-      type: NotificationType
-      title: string
-      body: string
-      href?: string
+    const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.small)
+    if (!parsed.ok) return parsed.response
+    const b = (parsed.data && typeof parsed.data === 'object' ? parsed.data : {}) as Record<string, unknown>
+
+    if (!TYPES.includes(b.type as NotificationType)) return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
+    if (typeof b.title !== 'string' || !b.title.trim() || typeof b.body !== 'string') {
+      return NextResponse.json({ error: 'title and body are required' }, { status: 400 })
+    }
+    // href is navigated to by the client: same-origin paths only.
+    let href: string | null = null
+    if (b.href !== undefined && b.href !== null && b.href !== '') {
+      href = safeInternalHref(b.href)
+      if (!href) return NextResponse.json({ error: 'href must be an in-app path' }, { status: 400 })
     }
 
     const { data, error } = await supabase
       .from('notifications')
-      .insert({ user_id: user.id, type: body.type, title: body.title, body: body.body, href: body.href ?? null })
+      .insert({ user_id: user.id, type: b.type, title: b.title.trim().slice(0, 200), body: b.body.slice(0, 2000), href })
       .select().single()
 
     if (error) throw error
@@ -60,16 +71,18 @@ export async function POST(request: NextRequest) {
 // PATCH /api/notifications — mark all as read, or specific IDs
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { supabase, user } = await getAuthedUser()
+    if (!user) return unauthorized()
 
-    const body = await request.json() as { ids?: string[]; all?: boolean }
+    const parsed = await parseBody<{ ids?: unknown; all?: unknown }>(request, MAX_BODY.small)
+    if (!parsed.ok) return parsed.response
+    const b = parsed.data ?? {}
 
-    if (body.all) {
+    if (b.all === true) {
       await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false)
-    } else if (body.ids?.length) {
-      await supabase.from('notifications').update({ read: true }).in('id', body.ids).eq('user_id', user.id)
+    } else if (Array.isArray(b.ids) && b.ids.length > 0) {
+      const ids = b.ids.filter(isUuid).slice(0, 100)
+      if (ids.length) await supabase.from('notifications').update({ read: true }).in('id', ids).eq('user_id', user.id)
     }
 
     return NextResponse.json({ success: true })

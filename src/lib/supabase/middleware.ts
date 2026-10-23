@@ -37,21 +37,24 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/interview') ||
     request.nextUrl.pathname.startsWith('/settings')
 
-  if (!user && isProtected) {
+  // Redirects must carry any session cookies refreshed by getUser() above,
+  // otherwise a refreshed token is dropped and the user is logged out early.
+  const redirectTo = (pathname: string) => {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    url.pathname = pathname
+    url.search = ''
+    const res = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach(c => res.cookies.set(c))
+    return res
   }
+
+  if (!user && isProtected) return redirectTo('/login')
 
   // Redirect logged-in users away from auth pages
   const isAuthPage = request.nextUrl.pathname === '/login' ||
     request.nextUrl.pathname === '/signup'
 
-  if (user && isAuthPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
+  if (user && isAuthPage) return redirectTo('/dashboard')
 
   return supabaseResponse
 }

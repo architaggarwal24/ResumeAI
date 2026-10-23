@@ -112,26 +112,17 @@ export class LLMError extends Error {
 // of ~3x.
 const MAX_RETRIES = 1
 
-// Resolve the correct URL for /api/llm depending on context:
-// - Browser: relative URL works fine
-// - Server-side (API routes): must use absolute URL
+// BROWSER-ONLY. This wrapper calls our /api/llm proxy with the page's own
+// same-origin session cookie. Server code (API routes) must NOT use it: they
+// import callLLMServer from '@/lib/llm/server', which calls the provider
+// directly — no HTTP hop to ourselves, no URL derived from env/Host, and no
+// session cookie forwarded anywhere.
 function getLLMProxyUrl(): string {
-  if (typeof window !== 'undefined') {
-    // Browser context — relative URL is fine
-    return '/api/llm'
-  }
-  // Server context — build absolute URL. NEXT_PUBLIC_APP_URL should always be
-  // set explicitly (see .env.example), but Vercel deployments also get
-  // VERCEL_URL for free at runtime, so a forgotten env var doesn't silently
-  // break every LLM-touching route by falling through to localhost in prod.
-  const base = process.env.NEXT_PUBLIC_APP_URL
-    || (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`)
-    || 'http://localhost:3000'
-  return `${base.replace(/\/$/, '')}/api/llm`
+  return '/api/llm'
 }
 
 export async function callLLM<T = Record<string, unknown>>(options: LLMOptions): Promise<T> {
-  const { creds, systemPrompt, userPrompt, signal: externalSignal, maxTokens, temperature, cookieHeader } = options
+  const { creds, systemPrompt, userPrompt, signal: externalSignal, maxTokens, temperature } = options
   let lastError: Error = new Error('Unknown error')
   const llmUrl = getLLMProxyUrl()
 
@@ -149,10 +140,7 @@ export async function callLLM<T = Record<string, unknown>>(options: LLMOptions):
     try {
       const res = await fetch(llmUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         signal: externalSignal,
         body: JSON.stringify({ creds, systemPrompt, userPrompt, maxTokens: attemptMaxTokens, temperature }),
       })

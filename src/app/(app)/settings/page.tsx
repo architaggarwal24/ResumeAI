@@ -140,7 +140,7 @@ export default function SettingsPage() {
           <h2 className="font-semibold text-sm">AI Provider &amp; API Keys</h2>
         </div>
         <p className="text-xs text-slate-500 mb-4">
-          Keys are saved in your browser&apos;s sessionStorage — they persist across refreshes but clear when you close this tab, and stay on this device only. Never sent to our servers.
+          Keys are saved in your browser&apos;s sessionStorage — they persist across refreshes and clear when you close this tab. They are never stored on our servers or in the database, but each AI request passes through our API so it can reach your provider; we use the key only for that request.
         </p>
 
         {/* Provider tabs */}

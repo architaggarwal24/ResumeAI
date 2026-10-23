@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { renderFullHTML } from '@/lib/templates/render'
 import { SharePasswordGate } from '@/components/resume/SharePasswordGate'
-import type { ResumeData, TemplateId } from '@/types/resume'
+import { PrintButton } from '@/components/resume/PrintButton'
+import { sanitizeResumeData, isTemplateId } from '@/lib/security/resume-schema'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,13 +15,15 @@ type SharedResumeResult = {
   expired?: boolean
   requiresPassword?: boolean
   unlocked?: boolean
-  parsedData?: ResumeData
-  templateId?: TemplateId
+  parsedData?: unknown
+  templateId?: string
   name?: string
 }
 
 export default async function SharePage({ params }: Props) {
   const { slug } = await params
+  // Slugs are generated server-side as base64url; anything else can't exist.
+  if (!/^[A-Za-z0-9_-]{6,32}$/.test(slug)) notFound()
 
   const supabase = await createClient()
 
@@ -33,12 +36,12 @@ export default async function SharePage({ params }: Props) {
   const { data, error } = await supabase.rpc('get_shared_resume', { p_slug: slug, p_password: null })
 
   if (error) {
-    console.error('[SharePage]', error)
-    notFound()
+    console.error('[SharePage]', error.code)
+    return notFound()
   }
 
   const result = data as SharedResumeResult | null
-  if (!result?.found) notFound()
+  if (!result?.found) return notFound()
 
   // Check expiry
   if (result.expired) {
@@ -61,7 +64,10 @@ export default async function SharePage({ params }: Props) {
     return <SharePasswordGate slug={slug} />
   }
 
-  const html = renderFullHTML(result.templateId ?? 'classic', result.parsedData as ResumeData)
+  // Stored data is untrusted: normalise before rendering server-side.
+  const resume = sanitizeResumeData(result.parsedData)
+  if (!resume) return notFound()
+  const html = renderFullHTML(isTemplateId(result.templateId) ? result.templateId : 'classic', resume)
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
@@ -73,13 +79,8 @@ export default async function SharePage({ params }: Props) {
           <span className="text-xs text-gray-400">· Shared Resume</span>
         </div>
         <div className="flex items-center gap-3">
-          {result.name && <span className="text-sm text-gray-500">{result.name}</span>}
-          <button
-            onClick={() => window.print()}
-            className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
-          >
-            Print / Save PDF
-          </button>
+          {result.name && <span className="text-sm text-gray-500">{String(result.name).slice(0, 200)}</span>}
+          <PrintButton />
         </div>
       </div>
 

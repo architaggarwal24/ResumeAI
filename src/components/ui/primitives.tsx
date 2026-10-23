@@ -18,11 +18,11 @@ export function Button({ variant = 'ghost', size = 'md', loading, children, clas
     <button
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center gap-1.5 font-medium rounded-lg transition-all cursor-pointer select-none',
+        'inline-flex items-center gap-1.5 font-medium rounded-lg transition-all duration-200 cursor-pointer select-none',
         'disabled:opacity-40 disabled:cursor-not-allowed',
         size === 'sm' && 'px-3 py-1.5 text-xs',
         size === 'md' && 'px-4 py-2 text-sm',
-        variant === 'primary' && 'bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-900/30 hover:-translate-y-px',
+        variant === 'primary' && 'btn-sheen bg-[linear-gradient(180deg,#8b7bff,#6a58e6)] hover:brightness-110 text-white shadow-lg shadow-violet-900/40 ring-1 ring-inset ring-white/15 hover:-translate-y-px active:translate-y-0 active:scale-[.98]',
         variant === 'ghost'   && 'bg-transparent hover:bg-white/5 text-slate-300 border border-white/8 hover:border-white/15',
         variant === 'danger'  && 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20',
         variant === 'success' && 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20',
@@ -41,7 +41,7 @@ export function Button({ variant = 'ghost', size = 'md', loading, children, clas
 export function Card({ children, className, ...props }: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('bg-[#16161d] border border-white/7 rounded-xl p-5 transition-colors hover:border-white/10', className)}
+      className={cn('bg-[#16161d] border border-white/7 rounded-xl p-5 transition-colors duration-200 hover:border-white/12 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]', className)}
       {...props}
     >
       {children}
@@ -141,5 +141,5 @@ export function Label({ children }: { children: ReactNode }) {
 // ─── Divider ─────────────────────────────────────────────────────────────────
 
 export function Divider() {
-  return <hr className="border-none border-t border-white/7 my-4" />
+  return <hr className="h-px border-0 bg-white/7 my-4" />
 }
