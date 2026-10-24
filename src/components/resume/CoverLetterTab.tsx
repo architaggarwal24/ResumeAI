@@ -75,7 +75,7 @@ export function CoverLetterTab({ resumeId }: { resumeId: string }) {
                 'p-3 rounded-lg border text-left transition-all',
                 tone === t.id
                   ? 'border-violet-500 bg-violet-500/10 text-violet-300'
-                  : 'border-white/8 bg-[#16161d] text-slate-400 hover:border-white/15 hover:text-slate-300'
+                  : 'border-white/8 bg-[#16181b] text-slate-400 hover:border-white/15 hover:text-slate-300'
               )}
             >
               <p className="text-xs font-semibold mb-0.5">{t.label}</p>
@@ -93,7 +93,7 @@ export function CoverLetterTab({ resumeId }: { resumeId: string }) {
           value={localJD}
           onChange={e => setLocalJD(e.target.value)}
           placeholder="Paste the job description here…"
-          className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3"
+          className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3"
         />
         <Button variant="primary" onClick={generate} loading={generating} disabled={!localJD.trim()}>
           <Sparkles size={13} />

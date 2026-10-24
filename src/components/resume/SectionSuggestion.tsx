@@ -99,7 +99,7 @@ export function SectionSuggestion({ resumeId, section, currentAtsScore, onApply 
   if (status !== 'ready' || !result) return null
 
   return (
-    <div className="mt-2 border border-violet-500/20 rounded-lg overflow-hidden bg-[#1c1c24]">
+    <div className="mt-2 border border-violet-500/20 rounded-lg overflow-hidden bg-[#1c1f23]">
       <div className="px-3 py-2.5 space-y-2 text-xs text-slate-300 leading-relaxed">
         <SectionPreview result={result} section={section} resumeData={resumeData} />
         <p className="text-slate-500 leading-relaxed pt-0.5">{result.reason}</p>

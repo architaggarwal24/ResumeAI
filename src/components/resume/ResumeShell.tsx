@@ -12,6 +12,7 @@ import { ShareManager }   from './ShareManager'
 import { InterviewTab }   from './InterviewTab'
 import { ChatDrawer }     from '@/components/chat/ChatDrawer'
 import { cn }             from '@/lib/utils'
+import { SlidingTabs }    from '@/components/ui/fx/SlidingTabs'
 import type { ResumeRow, AnalysisResult, ResumeTab } from '@/types/resume'
 import { BarChart2, Edit3, Zap, Layout, FileText, History, Link2, ChevronLeft, BriefcaseIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -42,7 +43,7 @@ export function ResumeShell({ resume, initialAnalysis }: Props) {
   return (
     <div className="flex flex-col h-full">
       {/* Topbar */}
-      <div className="flex items-center gap-3 px-6 h-14 border-b border-white/7 bg-[#111116] shrink-0">
+      <div className="flex items-center gap-3 px-6 h-14 border-b border-white/7 bg-[#111214] shrink-0">
         <Link href="/dashboard" className="text-slate-500 hover:text-slate-300 transition-colors">
           <ChevronLeft size={18}/>
         </Link>
@@ -60,18 +61,8 @@ export function ResumeShell({ resume, initialAnalysis }: Props) {
       </div>
 
       {/* Tab bar */}
-      <div className="flex items-center gap-0.5 px-4 border-b border-white/7 bg-[#111116] shrink-0 overflow-x-auto">
-        {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex items-center gap-1.5 px-4 py-3 text-xs font-medium transition-all border-b-2 -mb-px whitespace-nowrap',
-              activeTab === tab.id
-                ? 'text-violet-300 border-violet-500'
-                : 'text-slate-500 border-transparent hover:text-slate-300 hover:border-white/20'
-            )}>
-            {tab.icon}{tab.label}
-          </button>
-        ))}
+      <div className="px-4 border-b border-white/7 bg-[#111214] shrink-0">
+        <SlidingTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
       </div>
 
       {/* Content */}

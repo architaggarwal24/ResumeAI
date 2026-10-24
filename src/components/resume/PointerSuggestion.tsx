@@ -111,7 +111,7 @@ export function PointerSuggestion({
   if (status !== 'ready' || !result) return null
 
   return (
-    <div className="mt-2 border border-violet-500/20 rounded-lg overflow-hidden bg-[#1c1c24]">
+    <div className="mt-2 border border-violet-500/20 rounded-lg overflow-hidden bg-[#1c1f23]">
       <div className="px-3 py-2.5 space-y-1.5">
         <p className="text-xs text-red-400/70 line-through leading-relaxed">{currentText}</p>
         <p className="text-xs text-emerald-400 leading-relaxed">{result.suggested}</p>

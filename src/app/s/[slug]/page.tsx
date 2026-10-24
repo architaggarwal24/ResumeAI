@@ -46,7 +46,7 @@ export default async function SharePage({ params }: Props) {
   // Check expiry
   if (result.expired) {
     return (
-      <div className="min-h-screen bg-[#0c0c0f] flex items-center justify-center p-8">
+      <div className="min-h-screen bg-[#0b0c0d] flex items-center justify-center p-8">
         <div className="text-center">
           <p className="text-4xl mb-4">⏰</p>
           <h1 className="text-xl font-bold mb-2 text-slate-200">Link Expired</h1>

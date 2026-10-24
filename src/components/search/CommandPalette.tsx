@@ -84,7 +84,7 @@ export function CommandPalette() {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       {/* Palette */}
-      <div className="relative w-full max-w-xl mx-4 bg-[#16161d] border border-white/12 rounded-2xl shadow-2xl overflow-hidden fade-in"
+      <div className="relative w-full max-w-xl mx-4 bg-[#16181b] border border-white/12 rounded-2xl shadow-2xl overflow-hidden fade-in"
         onClick={e => e.stopPropagation()}>
         {/* Input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/8">

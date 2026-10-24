@@ -114,7 +114,7 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
           <div className="flex gap-2 items-center">
             <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Label (optional)" autoFocus
               onKeyDown={e => e.key === 'Enter' && createSnapshot()}
-              className="bg-[#1c1c24] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 w-48"/>
+              className="bg-[#1c1f23] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 w-48"/>
             <Button variant="primary" size="sm" onClick={createSnapshot} loading={savingSnap}>Save</Button>
             <Button size="sm" onClick={() => { setShowLabel(false); setLabel('') }}>Cancel</Button>
           </div>
@@ -171,7 +171,7 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
               {versions.map((v, i) => (
                 <div key={v.id} onClick={() => selectVersion(v.id)}
                   className={cn('flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all group',
-                    selectedId===v.id ? 'border-violet-500/40 bg-violet-500/8' : 'border-white/7 hover:border-white/15 bg-[#16161d]')}>
+                    selectedId===v.id ? 'border-violet-500/40 bg-violet-500/8' : 'border-white/7 hover:border-white/15 bg-[#16181b]')}>
                   <div className="flex flex-col items-center shrink-0 self-stretch">
                     <div className={cn('w-2 h-2 rounded-full mt-1', i===0 ? 'bg-violet-500' : 'bg-slate-600')}/>
                     {i < versions.length-1 && <div className="w-px flex-1 bg-white/8 mt-1"/>}

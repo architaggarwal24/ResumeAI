@@ -20,7 +20,7 @@ export function SpotlightCard({ children, className, ...props }: { children: Rea
     <div
       ref={ref}
       onPointerMove={onMove}
-      className={cn('spotlight bg-[#16161d] border border-white/7 rounded-xl transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30', className)}
+      className={cn('spotlight bg-[#16181b] border border-white/7 rounded-xl transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30', className)}
       {...props}
     >
       {children}

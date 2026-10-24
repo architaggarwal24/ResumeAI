@@ -179,7 +179,7 @@ export function InterviewTab() {
         </div>
 
         <div className="space-y-4 mb-8">
-          <div className="bg-[#16161d] border border-white/7 rounded-xl p-4 space-y-2.5">
+          <div className="bg-[#16181b] border border-white/7 rounded-xl p-4 space-y-2.5">
             <InfoRow icon="🎯" label="5 technical questions" sub="Role-specific, tailored to your actual resume and stack" />
             <InfoRow icon="💬" label="3 behavioural questions" sub="STAR-format, with real interviewer pushback" />
             <InfoRow icon="📊" label="Per-answer ratings" sub="Scored out of 10, with coaching after each response" />
@@ -194,7 +194,7 @@ export function InterviewTab() {
             value={targetRole}
             onChange={e => setTargetRole(e.target.value)}
             placeholder="e.g. Senior Backend Engineer, Product Manager, Data Scientist"
-            className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
+            className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
             onKeyDown={e => e.key === 'Enter' && startInterview()}
           />
         </div>
@@ -283,7 +283,7 @@ export function InterviewTab() {
               }}
               placeholder={streaming ? 'Interviewer is responding…' : showDebriefButton ? "Type 'debrief' or click the button above…" : 'Your answer…'}
               disabled={streaming}
-              className="flex-1 bg-[#1c1c24] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none disabled:opacity-50 leading-relaxed"
+              className="flex-1 bg-[#1c1f23] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none disabled:opacity-50 leading-relaxed"
             />
             <button
               onClick={handleSend}
@@ -336,7 +336,7 @@ function MessageBubble({ message, streaming }: { message: InterviewMessage; stre
       <div className={cn(
         'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
         isInterviewer
-          ? 'bg-[#1c1c24] border border-white/7 text-slate-200 rounded-tl-sm'
+          ? 'bg-[#1c1f23] border border-white/7 text-slate-200 rounded-tl-sm'
           : 'bg-violet-600/20 border border-violet-500/20 text-violet-100 rounded-tr-sm'
       )}>
         {message.content || (streaming ? (
@@ -374,7 +374,7 @@ function DebriefCard({
   }
 
   return (
-    <div className="border border-violet-500/20 bg-[#16161d] rounded-2xl overflow-hidden">
+    <div className="border border-violet-500/20 bg-[#16181b] rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-white/7 bg-violet-500/5">
         <p className="text-xs font-mono text-violet-400/70 uppercase tracking-wider mb-3">Interview Debrief</p>

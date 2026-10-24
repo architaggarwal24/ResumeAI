@@ -122,7 +122,7 @@ export function ChatDrawer() {
         className={cn(
           'fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg transition-all',
           open
-            ? 'bg-[#1c1c24] border border-white/15 text-slate-400 hover:text-slate-200'
+            ? 'bg-[#1c1f23] border border-white/15 text-slate-400 hover:text-slate-200'
             : 'bg-violet-600 hover:bg-violet-500 text-white shadow-violet-900/40'
         )}
       >
@@ -132,7 +132,7 @@ export function ChatDrawer() {
 
       {/* Drawer */}
       {open && (
-        <div className="fixed right-6 bottom-16 z-40 w-[380px] h-[520px] flex flex-col bg-[#16161d] border border-white/12 rounded-2xl shadow-2xl overflow-hidden fade-in">
+        <div className="fixed right-6 bottom-16 z-40 w-[380px] h-[520px] flex flex-col bg-[#16181b] border border-white/12 rounded-2xl shadow-2xl overflow-hidden fade-in">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 shrink-0">
             <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ export function ChatDrawer() {
                 placeholder="Ask anything about your resume…"
                 rows={1}
                 disabled={streaming}
-                className="flex-1 bg-[#1c1c24] border border-white/8 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none disabled:opacity-50"
+                className="flex-1 bg-[#1c1f23] border border-white/8 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none disabled:opacity-50"
                 style={{ minHeight: 38, maxHeight: 100, overflowY: 'auto' }}
               />
               <button
@@ -302,7 +302,7 @@ function AssistantMessage({
             'mt-2 border rounded-xl overflow-hidden',
             status === 'applied' ? 'border-emerald-500/25 bg-emerald-500/5' :
             status === 'denied'  ? 'border-white/5 opacity-50' :
-                                    'border-violet-500/25 bg-[#1c1c24]'
+                                    'border-violet-500/25 bg-[#1c1f23]'
           )}>
             <div className="px-3 py-1.5 bg-violet-500/8 border-b border-white/7">
               <span className="text-xs font-mono text-violet-400">✦ {edit.label}</span>

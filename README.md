@@ -41,7 +41,7 @@ This is a **Next.js 16 full-stack application** — there is no separate Express
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/architaggarwal24/ResumeAI.git
+git clone https://github.com/<your-username>/ResumeAI.git
 cd ResumeAI
 npm install
 ```
@@ -158,7 +158,7 @@ MIT — see [LICENSE](./LICENSE).
 
 Built by **Archit Aggarwal**.
 
-- Portfolio: [architaggarwal.vercel.app](https://architaggarwal24.github.io)
+- Portfolio: [architaggarwal24.github.io](https://architaggarwal24.github.io)
 - LinkedIn: [linkedin.com/in/architaggarwal24](https://www.linkedin.com/in/architaggarwal24)
 
 ## Tests

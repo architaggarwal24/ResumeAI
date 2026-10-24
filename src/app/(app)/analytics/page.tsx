@@ -6,6 +6,11 @@ import Link from 'next/link'
 import { cn, scoreColor } from '@/lib/utils'
 import { BarChart2, TrendingUp, TrendingDown, Minus, FileText, Award, RefreshCw, ChevronRight } from 'lucide-react'
 import { Card, CardSm, ScoreBar } from '@/components/ui/primitives'
+import { AnimatedNumber } from '@/components/ui/fx/AnimatedNumber'
+import { BlurFade } from '@/components/ui/fx/BlurFade'
+import { AreaChart } from '@/components/ui/viz/AreaChart'
+import { ActivityCalendar } from '@/components/ui/viz/ActivityCalendar'
+import { dayKey } from '@/lib/dates'
 import type { AnalyticsDashboard, ResumeAnalyticsSummary, ScoreDataPoint } from '@/types/resume'
 
 export default function AnalyticsPage() {
@@ -25,31 +30,48 @@ export default function AnalyticsPage() {
 
   const selectedResume = data.resumes.find(r => r.resumeId === selected)
 
+  // Every analysis run, bucketed by local day, for the activity calendar.
+  const activity: Record<string, number> = {}
+  for (const r of data.resumes) for (const pt of r.scoreHistory) {
+    const d = new Date(pt.date)
+    if (!Number.isNaN(d.getTime())) activity[dayKey(d)] = (activity[dayKey(d)] ?? 0) + 1
+  }
+
   return (
-    <div className="mx-auto px-8 py-8 max-w-6xl fade-in">
+    <div className="mx-auto px-4 sm:px-8 py-8 max-w-6xl fade-in">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2 mb-1">
+        <h1 className="font-display text-3xl font-semibold flex items-center gap-2 mb-1">
           <BarChart2 size={20} className="text-violet-400" />Analytics
         </h1>
         <p className="text-slate-400 text-sm">Score history, improvement trends, and cross-resume comparison.</p>
       </div>
 
       {/* Top stats */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
           { label: 'Total Analyses',   value: data.totalAnalyses,                         icon: <RefreshCw size={14}/> },
           { label: 'Resumes Tracked',  value: data.totalResumes,                          icon: <FileText size={14}/> },
           { label: 'Average Score',    value: data.avgScore != null ? data.avgScore : '—', icon: <BarChart2 size={14}/> },
           { label: 'Best Score',       value: data.bestScore != null ? data.bestScore : '—', icon: <Award size={14}/> },
-        ].map(stat => (
-          <Card key={stat.label} className="text-center py-5">
-            <div className="flex justify-center text-violet-400 mb-2">{stat.icon}</div>
-            <p className="text-3xl font-bold font-mono mb-1">{stat.value}</p>
-            <p className="text-xs text-slate-500">{stat.label}</p>
-          </Card>
+        ].map((stat, i) => (
+          <BlurFade key={stat.label} delay={i * 70}>
+            <Card className="text-center py-5">
+              <div className="flex justify-center text-violet-400 mb-2">{stat.icon}</div>
+              <p className="text-3xl font-bold font-mono mb-1">
+                {typeof stat.value === 'number' ? <AnimatedNumber value={stat.value} initialFrom={0} /> : stat.value}
+              </p>
+              <p className="text-xs text-slate-500">{stat.label}</p>
+            </Card>
+          </BlurFade>
         ))}
       </div>
+
+      {/* Activity calendar */}
+      <Card className="mb-8">
+        <p className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-3">Analysis activity</p>
+        <ActivityCalendar counts={activity} />
+      </Card>
 
       {data.mostImproved && (
         <div className="mb-8 px-5 py-4 bg-emerald-400/8 border border-emerald-400/20 rounded-xl flex items-center gap-3">
@@ -69,9 +91,9 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Resume list */}
-        <div className="col-span-1">
+        <div className="lg:col-span-1">
           <p className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-3">Resumes</p>
           <div className="space-y-2">
             {data.resumes.map(r => (
@@ -81,7 +103,7 @@ export default function AnalyticsPage() {
                   'px-4 py-3 rounded-xl border cursor-pointer transition-all',
                   selected === r.resumeId
                     ? 'border-violet-500/40 bg-violet-500/8'
-                    : 'border-white/7 bg-[#16161d] hover:border-white/15'
+                    : 'border-white/7 bg-[#16181b] hover:border-white/15'
                 )}>
                 <div className="flex items-center justify-between mb-1.5">
                   <p className="text-sm font-medium truncate flex-1 mr-2">{r.resumeName}</p>
@@ -104,7 +126,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Detail panel */}
-        <div className="col-span-2">
+        <div className="lg:col-span-2">
           {selectedResume ? (
             <ResumeDetail resume={selectedResume} />
           ) : (
@@ -230,71 +252,11 @@ function ResumeDetail({ resume }: { resume: ResumeAnalyticsSummary }) {
 
 function ScoreHistoryChart({ history }: { history: ScoreDataPoint[] }) {
   if (history.length === 0) return null
-
-  const min = Math.max(0, Math.min(...history.map(h => h.score)) - 10)
-  const max = Math.min(100, Math.max(...history.map(h => h.score)) + 10)
-  const range = max - min || 10
-  const W = 600
-  const H = 140
-  const PAD = { t: 16, r: 16, b: 32, l: 32 }
-  const chartW = W - PAD.l - PAD.r
-  const chartH = H - PAD.t - PAD.b
-
-  const points = history.map((pt, i) => ({
-    x: PAD.l + (i / Math.max(history.length - 1, 1)) * chartW,
-    y: PAD.t + chartH - ((pt.score - min) / range) * chartH,
-    ...pt,
+  const data = history.map(h => ({
+    label: h.label || new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    value: Math.round(h.score),
   }))
-
-  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-  const fillD = `${pathD} L ${points[points.length - 1].x} ${PAD.t + chartH} L ${points[0].x} ${PAD.t + chartH} Z`
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 140 }}>
-      <defs>
-        <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#7c6af7" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#7c6af7" stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-
-      {/* Grid lines */}
-      {[0, 25, 50, 75, 100].filter(v => v >= min && v <= max + 5).map(v => {
-        const y = PAD.t + chartH - ((v - min) / range) * chartH
-        return (
-          <g key={v}>
-            <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-            <text x={PAD.l - 4} y={y + 4} fontSize="9" fill="rgba(255,255,255,0.2)" textAnchor="end">{v}</text>
-          </g>
-        )
-      })}
-
-      {/* Fill */}
-      <path d={fillD} fill="url(#scoreGrad)" />
-
-      {/* Line */}
-      <path d={pathD} fill="none" stroke="#7c6af7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-
-      {/* Points */}
-      {points.map((p, i) => (
-        <g key={i}>
-          <circle cx={p.x} cy={p.y} r="4" fill="#7c6af7" />
-          <circle cx={p.x} cy={p.y} r="2" fill="white" />
-          {/* Label below */}
-          <text x={p.x} y={H - 4} fontSize="9" fill="rgba(255,255,255,0.3)" textAnchor="middle">{p.label}</text>
-        </g>
-      ))}
-
-      {/* Score labels on points */}
-      {points.map((p, i) => (
-        <text key={`lbl-${i}`} x={p.x} y={p.y - 8} fontSize="10"
-          fill={p.score >= 70 ? '#34d399' : p.score >= 45 ? '#fbbf24' : '#f87171'}
-          textAnchor="middle" fontWeight="600">
-          {p.score}
-        </text>
-      ))}
-    </svg>
-  )
+  return <AreaChart data={data} />
 }
 
 function ImprovementChip({ improvement }: { improvement: number }) {

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="c3f647c9-4c61-4801-bb8e-8a6c68055e34" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0000355476519605" />
+      <entry key="MS500" value="1.1483491835098971" />
+      <entry key="S2" value="1.9727373264519952" />
+      <entry key="S5" value="2.489191201451463" />
+      <entry key="S10" value="2.724441450697368" />
+      <entry key="S30" value="3.6033961107169623" />
+      <entry key="S60" value="7.661662035399587" />
+      <entry key="M2" value="16.906754924216642" />
+      <entry key="M5" value="37.628029672878505" />
+      <entry key="M10" value="61.688833993061884" />
+      <entry key="M15" value="80.92513920267037" />
+      <entry key="M30" value="122.63601244699883" />
+      <entry key="H1" value="165.31553110917747" />
+      <entry key="H2" value="197.7993914290673" />
+      <entry key="H4" value="218.16093624809278" />
+      <entry key="D1" value="237.75749273043328" />
+      <entry key="W1" value="241.38693290108583" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="2.7127277303166945E-87" />
+      <entry key="S2" value="2.282188705499957E-22" />
+      <entry key="S5" value="2.2046549139037002E-9" />
+      <entry key="S10" value="4.6953752926722484E-5" />
+      <entry key="S30" value="0.0360765452567084" />
+      <entry key="S60" value="0.1902915649217848" />
+      <entry key="M2" value="0.4546247655288742" />
+      <entry key="M5" value="0.9293642011380572" />
+      <entry key="M10" value="1.459689589984472" />
+      <entry key="M15" value="1.934328640609682" />
+      <entry key="M30" value="3.017501311473302" />
+      <entry key="H1" value="4.112177404599603" />
+      <entry key="H2" value="4.92374158943568" />
+      <entry key="H4" value="5.423293274440762" />
+      <entry key="D1" value="5.897976603201896" />
+      <entry key="W1" value="5.985272828768692" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="0.10511205829323984" />
+      <entry key="MS500" value="0.6705514107922245" />
+      <entry key="S2" value="1.6016866732475035" />
+      <entry key="S5" value="2.274741667650704" />
+      <entry key="S10" value="2.602074956227601" />
+      <entry key="S30" value="3.590597056896732" />
+      <entry key="S60" value="7.813514290451065" />
+      <entry key="M2" value="17.32447062410776" />
+      <entry key="M5" value="38.526526949205284" />
+      <entry key="M10" value="63.125370283190996" />
+      <entry key="M15" value="82.8409351694973" />
+      <entry key="M30" value="125.64178866385748" />
+      <entry key="H1" value="169.42088569255623" />
+      <entry key="H2" value="202.7194054125497" />
+      <entry key="H4" value="223.58227355154992" />
+      <entry key="D1" value="243.65512919303518" />
+      <entry key="W1" value="247.37215677255296" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3JNJvgcWQolkcjDOrkomPKhgsgd" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
+    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Archit/Projects/ResumeAI&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;python.packages.toolwindow.project.migrated.to.right.top.v2&quot;: &quot;true&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Archit\\Projects\\ResumeAI\\node_modules\\typescript\\lib&quot;
+  }
+}</component>
+  <component name="RunManager" selected="npm.Next.js: server-side">
+    <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
+      <method v="2" />
+    </configuration>
+    <configuration name="Next.js: server-side" type="js.build_tools.npm">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-73a66231627c-5bd6d13a2a75-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-262.10968.92" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="c3f647c9-4c61-4801-bb8e-8a6c68055e34" name="Changes" comment="" />
+      <created>1789495824689</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1789495824689</updated>
+      <workItem from="1789495825763" duration="209000" />
+      <workItem from="1789496051013" duration="599000" />
+      <workItem from="1790111485641" duration="639000" />
+      <workItem from="1790137661516" duration="1315000" />
+      <workItem from="1790171893261" duration="4000" />
+      <workItem from="1790228065192" duration="402000" />
+      <workItem from="1790318871200" duration="882000" />
+      <workItem from="1792730421978" duration="2406000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

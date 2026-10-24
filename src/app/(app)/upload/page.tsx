@@ -1,5 +1,6 @@
 // src/app/(app)/upload/page.tsx
 'use client'
+import { AgentSteps } from '@/components/ui/fx/AgentSteps'
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, FileText, Loader2, Sparkles, Link2, Clipboard, AlertTriangle, X, Clock } from 'lucide-react'
@@ -178,9 +179,9 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="mx-auto px-8 py-8 max-w-2xl fade-in">
+    <div className="mx-auto px-4 sm:px-8 py-8 max-w-2xl fade-in">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight mb-1">Import Resume</h1>
+        <h1 className="font-display text-3xl font-semibold mb-1">Import Resume</h1>
         <p className="text-slate-400 text-sm">Upload a PDF or import directly from LinkedIn.</p>
       </div>
 
@@ -195,7 +196,7 @@ export default function UploadPage() {
       )}
 
       {/* Mode switcher */}
-      <div className="flex gap-1 p-1 bg-[#111116] rounded-xl mb-5 border border-white/7">
+      <div className="flex gap-1 p-1 bg-[#111214] rounded-xl mb-5 border border-white/7">
         {([
           { id: 'pdf',      icon: <FileText size={14}/>, label: 'PDF Upload'      },
           { id: 'linkedin', icon: <Link2    size={14}/>, label: 'LinkedIn Import' },
@@ -226,44 +227,32 @@ export default function UploadPage() {
             onDragLeave={() => setDrag(false)}
             onDrop={e => { e.preventDefault(); setDrag(false); processPDF(e.dataTransfer.files[0]) }}
             onClick={() => !isPDFProcessing && inputRef.current?.click()}
+            role="button" tabIndex={isPDFProcessing ? -1 : 0}
+            aria-label="Upload resume PDF: drop a file or press Enter to browse"
+            onKeyDown={e => { if (!isPDFProcessing && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); inputRef.current?.click() } }}
           >
             <input ref={inputRef} type="file" accept=".pdf" className="hidden"
               onChange={e => e.target.files?.[0] && processPDF(e.target.files[0])} />
 
             {isPDFProcessing ? (
               <div className="flex flex-col items-center gap-3">
-                <Loader2 size={36} className="text-violet-400 spin" />
+                <AgentSteps
+                  className="w-full max-w-xs text-left"
+                  activeIndex={['reading', 'parsing', 'saving'].indexOf(step)}
+                  steps={['Reading the PDF in your browser', 'Extracting structure with AI', 'Saving to your account']}
+                />
 
-                {/* Step label */}
-                <div className="text-center">
-                  <p className="text-slate-200 font-medium">
-                    {step === 'reading' ? 'Reading PDF…' :
-                     step === 'saving'  ? 'Saving to account…' :
-                     'Parsing with AI…'}
-                  </p>
-
-                  {/* Elapsed + model name */}
-                  {step === 'parsing' && (
-                    <div className="mt-1 space-y-0.5">
-                      <p className="text-xs text-slate-500">
-                        {formatElapsed(elapsed)} · {getFastCreds(byokCreds).model}
-                      </p>
-                      {getFastCreds(byokCreds).model !== byokCreds.model && (
-                        <p className="text-xs text-slate-600">
-                          Auto-switched for faster extraction
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Progress dots */}
-                <div className="flex gap-1.5">
-                  {(['reading', 'parsing', 'saving'] as Step[]).map((s, i) => (
-                    <div key={s} className={cn('h-1 w-8 rounded-full transition-all',
-                      ['reading','parsing','saving'].indexOf(step) >= i ? 'bg-violet-500' : 'bg-white/10')} />
-                  ))}
-                </div>
+                {/* Elapsed + model name */}
+                {step === 'parsing' && (
+                  <div className="space-y-0.5 text-center">
+                    <p className="text-xs text-slate-500 font-mono tabular">
+                      {formatElapsed(elapsed)} · {getFastCreds(byokCreds).model}
+                    </p>
+                    {getFastCreds(byokCreds).model !== byokCreds.model && (
+                      <p className="text-xs text-slate-600">Auto-switched for faster extraction</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Slow model warning */}
                 {showSlowWarn && step === 'parsing' && (
@@ -287,17 +276,17 @@ export default function UploadPage() {
               </div>
             ) : file ? (
               <div className="flex flex-col items-center gap-2">
-                <FileText size={36} className="text-emerald-400" />
+                <div className="pop flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-400/10"><FileText size={24} className="text-emerald-400" /></div>
                 <p className="font-medium text-slate-200">{file.name}</p>
                 <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(0)} KB</p>
                 <p className="text-xs text-slate-600 mt-1">Click to choose a different file</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">
-                <Upload size={36} className="text-slate-500" />
+                <div className={cn("flex h-14 w-14 items-center justify-center rounded-2xl border transition-all duration-300", drag ? "border-violet-400/60 bg-violet-400/10 scale-110 shadow-[0_0_40px_-8px_rgba(60,201,174,0.7)]" : "border-white/10 bg-white/[0.03]")}><Upload size={24} className={drag ? "text-violet-300" : "text-slate-400"} /></div>
                 <div>
                   <p className="font-medium text-slate-300">Drop your resume PDF here, or click to browse</p>
-                  <p className="text-xs text-slate-500 mt-1">PDF only · max 10MB · parsed locally in browser</p>
+                  <p className="text-xs text-slate-500 mt-1">PDF only · max 10MB · text is read in your browser, then structured by your AI provider</p>
                 </div>
               </div>
             )}
@@ -321,7 +310,7 @@ export default function UploadPage() {
                 <input
                   value={liUrl} onChange={e => setLiUrl(e.target.value)}
                   placeholder="https://linkedin.com/in/username"
-                  className="flex-1 bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
+                  className="flex-1 bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
                   onKeyDown={e => e.key === 'Enter' && !isLIProcessing && importLinkedIn(false)}
                   disabled={isLIProcessing}
                 />
@@ -345,7 +334,7 @@ export default function UploadPage() {
               </p>
               <textarea rows={10} value={liPaste} onChange={e => setLiPaste(e.target.value)}
                 placeholder="Paste your LinkedIn profile text here…"
-                className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3"
+                className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3"
                 disabled={isLIProcessing}/>
               <div className="flex gap-2">
                 <Button variant="primary" onClick={() => importLinkedIn(true)} loading={isLIProcessing} disabled={liPaste.trim().length < 100}>
@@ -372,7 +361,7 @@ export default function UploadPage() {
         </div>
         <textarea rows={5} value={jd} onChange={e => setJd(e.target.value)}
           placeholder="Paste the full job description here to get ATS scoring and keyword suggestions after import…"
-          className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none"/>
+          className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none"/>
       </Card>
     </div>
   )

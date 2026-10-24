@@ -120,7 +120,7 @@ export default function InterviewPrepPage() {
           <div>
             <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">Resume to use</label>
             <select value={selectedResume} onChange={e => setSelectedResume(e.target.value)}
-              className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50">
+              className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50">
               {resumes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </div>
@@ -135,7 +135,7 @@ export default function InterviewPrepPage() {
           <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">Job Description</label>
           <textarea rows={5} value={jd} onChange={e => setJd(e.target.value)}
             placeholder="Paste the full job description here…"
-            className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none" />
+            className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none" />
         </div>
       </Card>
 
@@ -217,7 +217,7 @@ export default function InterviewPrepPage() {
               {filteredQ.map((q) => (
                 <div key={q.id}
                   className={cn('border rounded-xl overflow-hidden transition-all',
-                    q.checked ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/7 bg-[#16161d]')}>
+                    q.checked ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/7 bg-[#16181b]')}>
                   <div className="flex items-start gap-3 px-4 py-3 cursor-pointer"
                     onClick={() => setExpanded(expanded === q.id ? null : q.id)}>
                     <button className={cn('mt-0.5 shrink-0', q.checked ? 'text-emerald-400' : 'text-slate-600')}

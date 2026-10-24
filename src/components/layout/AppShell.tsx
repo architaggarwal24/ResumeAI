@@ -24,18 +24,21 @@ function SidebarBody({ user, pathname, onNavigate, onSignOut }: {
   onNavigate?: () => void
   onSignOut: () => void
 }) {
+  // Gliding hover pill behind the nav items (Unlumen "highlight" idea).
+  const [hl, setHl] = useState<{ top: number; height: number } | null>(null)
+
   return (
     <>
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 h-14 border-b border-white/7 shrink-0">
-        <div className="w-2 h-2 rounded-full bg-violet-500 shadow-lg shadow-violet-500/60" />
-        <span className="font-bold tracking-tight">ResumeAI</span>
+        <div className="w-2 h-2 rounded-full bg-amber-300 shadow-[0_0_10px_2px_rgba(251,191,36,0.5)]" />
+        <span className="font-display text-lg font-semibold">ResumeAI</span>
       </div>
 
       {/* Search hint */}
       <button
         onClick={() => { onNavigate?.(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true })) }}
-        className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 bg-[#1c1c24] border border-white/8 rounded-lg text-xs text-slate-500 hover:text-slate-300 hover:border-white/15 transition-all cursor-pointer"
+        className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 bg-[#1c1f23] border border-white/8 rounded-lg text-xs text-slate-500 hover:text-slate-300 hover:border-white/15 transition-all cursor-pointer"
       >
         <Search size={12} />
         <span className="flex-1 text-left">Search…</span>
@@ -43,19 +46,22 @@ function SidebarBody({ user, pathname, onNavigate, onSignOut }: {
       </button>
 
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto mt-1" aria-label="Primary">
+      <nav className="relative flex-1 p-3 space-y-0.5 overflow-y-auto mt-1" aria-label="Primary" onPointerLeave={() => setHl(null)}>
+        <span aria-hidden className="pointer-events-none absolute left-3 right-3 rounded-lg bg-white/[0.05] transition-[top,height,opacity] duration-200 ease-out"
+          style={{ top: hl?.top ?? 0, height: hl?.height ?? 0, opacity: hl ? 1 : 0 }} />
         <p className="text-[10px] font-mono text-slate-600 uppercase tracking-widest px-2 py-2">Menu</p>
         {NAV.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
           return (
             <Link key={href} href={href} onClick={onNavigate} aria-current={active ? 'page' : undefined}
+              onPointerEnter={e => setHl({ top: e.currentTarget.offsetTop, height: e.currentTarget.offsetHeight })}
               className={cn(
-                'relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200',
+                'relative z-10 flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors duration-200',
                 active
-                  ? 'bg-violet-600/15 text-violet-200 shadow-[inset_0_0_0_1px_rgba(139,123,255,0.18)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 hover:translate-x-0.5'
+                  ? 'bg-violet-600/15 text-violet-200 shadow-[inset_0_0_0_1px_rgba(60,201,174,0.22)]'
+                  : 'text-slate-400 hover:text-slate-100'
               )}>
-              {active && <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 rounded-full bg-violet-400 shadow-[0_0_10px_2px_rgba(139,123,255,0.6)]" />}
+              {active && <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 rounded-full bg-violet-400 shadow-[0_0_10px_2px_rgba(60,201,174,0.6)]" />}
               <Icon size={15} />
               {label}
             </Link>
@@ -76,7 +82,7 @@ function SidebarBody({ user, pathname, onNavigate, onSignOut }: {
           </Link>
         </div>
         <div className="flex items-center gap-2.5 px-2 py-1.5 mb-1">
-          <div className="w-6 h-6 rounded-full bg-[linear-gradient(135deg,#8b7bff,#22d3ee)] flex items-center justify-center text-xs font-bold text-white">
+          <div className="w-6 h-6 rounded-full bg-[linear-gradient(135deg,#2fbfa3,#fbbf24)] flex items-center justify-center text-xs font-bold text-white">
             {user.email?.[0]?.toUpperCase() ?? 'U'}
           </div>
           <span className="text-xs text-slate-400 truncate flex-1">{user.email}</span>
@@ -111,12 +117,12 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
   }
 
   return (
-    <div className="flex h-screen bg-[#0c0c0f] overflow-hidden">
+    <div className="flex h-screen bg-[#0b0c0d] overflow-hidden">
       {/* Command Palette — always mounted */}
       <CommandPalette />
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-52 shrink-0 flex-col bg-[#111116] border-r border-white/7">
+      <aside className="hidden md:flex w-52 shrink-0 flex-col bg-[#111214] border-r border-white/7">
         <SidebarBody user={user} pathname={pathname} onSignOut={signOut} />
       </aside>
 
@@ -124,7 +130,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
       {drawer && (
         <div className="md:hidden fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label="Navigation">
           <button aria-label="Close menu" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDrawer(false)} />
-          <aside className="slide-in absolute left-0 top-0 bottom-0 w-64 flex flex-col bg-[#111116] border-r border-white/10 shadow-2xl">
+          <aside className="slide-in absolute left-0 top-0 bottom-0 w-64 flex flex-col bg-[#111214] border-r border-white/10 shadow-2xl">
             <button aria-label="Close menu" onClick={() => setDrawer(false)}
               className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-200 transition-colors"><X size={16} /></button>
             <SidebarBody user={user} pathname={pathname} onNavigate={() => setDrawer(false)} onSignOut={signOut} />
@@ -135,13 +141,13 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
       {/* Main */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center gap-3 h-12 px-4 border-b border-white/7 bg-[#111116] shrink-0">
+        <div className="md:hidden flex items-center gap-3 h-12 px-4 border-b border-white/7 bg-[#111214] shrink-0">
           <button aria-label="Open menu" aria-expanded={drawer} onClick={() => setDrawer(true)}
             className="text-slate-300 hover:text-white transition-colors">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-violet-500 shadow-lg shadow-violet-500/60" />
+            <div className="w-2 h-2 rounded-full bg-amber-300 shadow-[0_0_10px_2px_rgba(251,191,36,0.5)]" />
             <span className="font-bold tracking-tight text-sm">ResumeAI</span>
           </div>
         </div>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/primitives'
 import { AuthShell } from '@/components/auth/AuthShell'
 import { Mail, Lock, Globe, Eye, EyeOff } from 'lucide-react'
 
-const inputCls = 'w-full bg-[#101015]/80 border border-white/8 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 transition-colors focus:outline-none focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/15'
+const inputCls = 'w-full bg-[#0b0c0d] border border-white/8 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 transition-colors focus:outline-none focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/15'
 
 export default function SignupPage() {
   const supabase = createClient()
@@ -66,7 +66,7 @@ export default function SignupPage() {
 
       <div className="relative mb-4">
         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/8" /></div>
-        <div className="relative flex justify-center"><span className="px-3 bg-[#14141a] text-xs text-slate-500 rounded">or email</span></div>
+        <div className="relative flex justify-center"><span className="px-3 bg-[#121416] text-xs text-slate-500 rounded">or email</span></div>
       </div>
 
       <form onSubmit={handleSignup} className="space-y-3">

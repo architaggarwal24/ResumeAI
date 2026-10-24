@@ -60,7 +60,7 @@ export function SharePasswordGate({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0f] flex items-center justify-center p-8">
+    <div className="min-h-screen bg-[#0b0c0d] flex items-center justify-center p-8">
       <div className="w-full max-w-sm fade-in">
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-violet-600/20 flex items-center justify-center mx-auto mb-4">
@@ -78,7 +78,7 @@ export function SharePasswordGate({ slug }: { slug: string }) {
             onKeyDown={e => e.key === 'Enter' && verify()}
             autoFocus
             disabled={loading}
-            className="w-full bg-[#16161d] border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
+            className="w-full bg-[#16181b] border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
           />
           {error && <p className="text-sm text-red-400 text-center">{error}</p>}
           <button

@@ -152,7 +152,7 @@ export default function JobsPage() {
           return (
             <div key={col.id}
               className={cn('flex flex-col rounded-xl border transition-all',
-                dragOver===col.id ? 'border-violet-500/40 bg-violet-500/5' : 'border-white/7 bg-[#111116]')}
+                dragOver===col.id ? 'border-violet-500/40 bg-violet-500/5' : 'border-white/7 bg-[#111214]')}
               onDragOver={e => { e.preventDefault(); setDragOver(col.id) }}
               onDragLeave={() => setDragOver(null)}
               onDrop={e => onDrop(e, col.id)}>
@@ -173,30 +173,30 @@ export default function JobsPage() {
               <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
                 {/* Inline add form */}
                 {addingTo === col.id && (
-                  <div className="bg-[#1c1c24] border border-violet-500/30 rounded-xl p-3 space-y-2 fade-in">
+                  <div className="bg-[#1c1f23] border border-violet-500/30 rounded-xl p-3 space-y-2 fade-in">
                     <input value={form.company} onChange={e=>setForm(p=>({...p,company:e.target.value}))} placeholder="Company *" autoFocus
-                      className="w-full bg-[#111116] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
                     <input value={form.role} onChange={e=>setForm(p=>({...p,role:e.target.value}))} placeholder="Role *"
-                      className="w-full bg-[#111116] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
                     <input value={form.url} onChange={e=>setForm(p=>({...p,url:e.target.value}))} placeholder="Job URL"
-                      className="w-full bg-[#111116] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
                     <input value={form.location} onChange={e=>setForm(p=>({...p,location:e.target.value}))} placeholder="Location"
-                      className="w-full bg-[#111116] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
                     <div className="grid grid-cols-2 gap-1.5">
                       <input value={form.salaryMin} onChange={e=>setForm(p=>({...p,salaryMin:e.target.value}))} placeholder="Min salary" type="number"
-                        className="bg-[#111116] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                        className="bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
                       <input value={form.salaryMax} onChange={e=>setForm(p=>({...p,salaryMax:e.target.value}))} placeholder="Max salary" type="number"
-                        className="bg-[#111116] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                        className="bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
                     </div>
                     {resumes.length > 0 && (
                       <select value={form.resumeId} onChange={e=>setForm(p=>({...p,resumeId:e.target.value}))}
-                        className="w-full bg-[#111116] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50">
+                        className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50">
                         <option value="">Link resume (optional)</option>
                         {resumes.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
                       </select>
                     )}
                     <textarea value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="Notes…" rows={2}
-                      className="w-full bg-[#111116] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none"/>
+                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none"/>
                     <div className="flex gap-1.5">
                       <Button variant="primary" size="sm" onClick={() => addJob(col.id)} loading={saving} disabled={!form.company.trim()||!form.role.trim()}>Add</Button>
                       <Button size="sm" onClick={() => setAddingTo(null)}><X size={12}/></Button>
@@ -210,7 +210,7 @@ export default function JobsPage() {
 
                 {colJobs.map(job => (
                   <div key={job.id} draggable onDragStart={e => { setDragging(job.id); e.dataTransfer.effectAllowed='move' }}
-                    className={cn('bg-[#16161d] border border-white/7 rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all group hover:border-white/15 hover:shadow-md hover:shadow-black/20',
+                    className={cn('bg-[#16181b] border border-white/7 rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all group hover:border-white/15 hover:shadow-md hover:shadow-black/20',
                       dragging===job.id && 'opacity-40 scale-95')}>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex items-start gap-1.5 min-w-0">
@@ -225,7 +225,7 @@ export default function JobsPage() {
                           <MoreHorizontal size={13}/>
                         </button>
                         {menuOpen===job.id && (
-                          <div className="absolute right-0 top-6 bg-[#1c1c24] border border-white/10 rounded-xl shadow-xl z-20 py-1 w-44 fade-in" onClick={e=>e.stopPropagation()}>
+                          <div className="absolute right-0 top-6 bg-[#1c1f23] border border-white/10 rounded-xl shadow-xl z-20 py-1 w-44 fade-in" onClick={e=>e.stopPropagation()}>
                             <button onClick={()=>{setEditing(job);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><Edit2 size={11}/>Edit</button>
                             {safeHttpUrl(job.url) && <a href={safeHttpUrl(job.url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><ExternalLink size={11}/>View Posting</a>}
                             {job.resume_id && <button onClick={()=>{router.push(`/resume/${job.resume_id}`);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><FileText size={11}/>Open Resume</button>}
@@ -261,7 +261,7 @@ export default function JobsPage() {
       {/* Edit modal */}
       {editingJob && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6" onClick={()=>setEditing(null)}>
-          <div className="bg-[#16161d] border border-white/10 rounded-2xl p-6 w-full max-w-md fade-in shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="bg-[#16181b] border border-white/10 rounded-2xl p-6 w-full max-w-md fade-in shadow-2xl" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-lg">Edit Application</h3>
               <button onClick={()=>setEditing(null)} className="text-slate-500 hover:text-slate-300"><X size={18}/></button>
@@ -271,7 +271,7 @@ export default function JobsPage() {
                 <div key={fld}>
                   <p className="text-xs font-mono text-slate-500 mb-1 uppercase tracking-wider">{lbl}</p>
                   <input value={(editingJob[fld] as string)||''} onChange={e=>setEditing(p=>p?{...p,[fld]:e.target.value}:p)}
-                    className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"/>
+                    className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"/>
                 </div>
               ))}
               <div className="grid grid-cols-2 gap-3">
@@ -279,7 +279,7 @@ export default function JobsPage() {
                   <div key={fld}>
                     <p className="text-xs font-mono text-slate-500 mb-1 uppercase tracking-wider">{lbl}</p>
                     <input type="number" value={(editingJob[fld] as number)||''} onChange={e=>setEditing(p=>p?{...p,[fld]:e.target.value?+e.target.value:null}:p)}
-                      className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"/>
                   </div>
                 ))}
               </div>
@@ -287,7 +287,7 @@ export default function JobsPage() {
                 <div>
                   <p className="text-xs font-mono text-slate-500 mb-1 uppercase tracking-wider">Linked Resume</p>
                   <select value={editingJob.resume_id||''} onChange={e=>setEditing(p=>p?{...p,resume_id:e.target.value||null}:p)}
-                    className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50">
+                    className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50">
                     <option value="">No resume linked</option>
                     {resumes.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
@@ -296,7 +296,7 @@ export default function JobsPage() {
               <div>
                 <p className="text-xs font-mono text-slate-500 mb-1 uppercase tracking-wider">Notes</p>
                 <textarea rows={3} value={editingJob.notes||''} onChange={e=>setEditing(p=>p?{...p,notes:e.target.value}:p)}
-                  className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 resize-none"/>
+                  className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 resize-none"/>
               </div>
             </div>
             <div className="flex gap-2 mt-5">

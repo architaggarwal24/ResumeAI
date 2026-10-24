@@ -21,7 +21,7 @@ export function ToastContainer() {
           key={t.id}
           className={cn(
             'fade-in flex items-center gap-3 px-4 py-3 rounded-lg border text-sm max-w-sm pointer-events-auto',
-            'bg-[#16161d] shadow-xl',
+            'bg-[#16181b] shadow-xl',
             t.type === 'success' && 'border-emerald-500/25',
             t.type === 'error'   && 'border-red-500/25',
             t.type === 'info'    && 'border-blue-500/25',

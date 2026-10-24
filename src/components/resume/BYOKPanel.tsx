@@ -77,7 +77,7 @@ export function BYOKPanel() {
       </div>
 
       {/* Provider tabs */}
-      <div className="flex gap-1 p-1 bg-[#0c0c0f] rounded-lg mb-4 overflow-x-auto">
+      <div className="flex gap-1 p-1 bg-[#0b0c0d] rounded-lg mb-4 overflow-x-auto">
         {(Object.keys(PROVIDERS) as LLMProvider[]).map(id => (
           <button key={id}
             className={cn(
@@ -102,7 +102,7 @@ export function BYOKPanel() {
               value={byokCreds.apiKey}
               onChange={e => { setApiKey(e.target.value); setTestResult(null); setTestError('') }}
               placeholder={cfg.placeholder}
-              className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
+              className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
             />
             <button onClick={() => setShowKey(v => !v)}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
@@ -127,7 +127,7 @@ export function BYOKPanel() {
                 setTestResult(null)
               }
             }}
-            className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 mb-2"
+            className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 mb-2"
           >
             {cfg.models.map(m => <option key={m} value={m}>{m}</option>)}
             {isCustomModel && (
@@ -145,7 +145,7 @@ export function BYOKPanel() {
                 onKeyDown={e => e.key === 'Enter' && applyCustomModel()}
                 placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. nvidia/nemotron-3-nano-30b-a3b' : 'model ID'}
                 autoFocus
-                className="flex-1 bg-[#1c1c24] border border-violet-500/40 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/70"
+                className="flex-1 bg-[#1c1f23] border border-violet-500/40 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/70"
               />
               <button onClick={applyCustomModel}
                 className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-lg transition-colors">

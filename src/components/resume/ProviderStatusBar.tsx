@@ -87,7 +87,7 @@ export function ProviderStatusBar() {
       <div className={cn(
         'flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm',
         byokCreds.apiKey
-          ? 'bg-[#16161d] border-white/8'
+          ? 'bg-[#16181b] border-white/8'
           : 'bg-amber-400/5 border-amber-400/20'
       )}>
         {byokCreds.apiKey ? (

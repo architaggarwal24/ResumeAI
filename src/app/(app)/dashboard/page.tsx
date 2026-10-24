@@ -7,7 +7,8 @@ import { FileText, Plus } from 'lucide-react'
 import { DeleteResumeButton } from '@/components/resume/DeleteResumeButton'
 import { SpotlightCard } from '@/components/ui/fx/SpotlightCard'
 import { BlurFade } from '@/components/ui/fx/BlurFade'
-import { CountUp } from '@/components/ui/fx/CountUp'
+import { AnimatedNumber } from '@/components/ui/fx/AnimatedNumber'
+import { MiniRing } from '@/components/ui/viz/MiniRing'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -26,14 +27,14 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight mb-1">Dashboard</h1>
+          <h1 className="font-display text-3xl font-semibold mb-1">Dashboard</h1>
           <p className="text-slate-400 text-sm">
             {list.length === 0 ? 'Upload your first resume to get started.' : `${list.length} resume${list.length > 1 ? 's' : ''} · click to open`}
           </p>
         </div>
         <Link
           href="/upload"
-          className="btn-sheen inline-flex items-center gap-2 px-4 py-2 bg-[linear-gradient(180deg,#8b7bff,#6a58e6)] hover:brightness-110 text-white text-sm font-medium rounded-xl transition-all hover:-translate-y-px shadow-lg shadow-violet-900/40 ring-1 ring-inset ring-white/15"
+          className="btn-sheen inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-all hover:-translate-y-px shadow-lg shadow-violet-900/40 ring-1 ring-inset ring-white/15"
         >
           <Plus size={15} />
           New Resume
@@ -44,7 +45,7 @@ export default async function DashboardPage() {
       {list.length === 0 && (
         <div className="glass rounded-2xl p-16 text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-600/15 ring-1 ring-inset ring-violet-400/20 shadow-[0_0_40px_-8px_rgba(139,123,255,0.6)]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-600/15 ring-1 ring-inset ring-violet-400/20 shadow-[0_0_40px_-8px_rgba(60,201,174,0.5)]">
               <FileText size={30} className="text-violet-300" />
             </div>
           </div>
@@ -52,7 +53,7 @@ export default async function DashboardPage() {
           <p className="text-slate-400 text-sm mb-6">Upload a PDF and get instant section-level scoring with AI-powered suggestions.</p>
           <Link
             href="/upload"
-            className="btn-sheen inline-flex items-center gap-2 px-5 py-2.5 bg-[linear-gradient(180deg,#8b7bff,#6a58e6)] hover:brightness-110 text-white text-sm font-medium rounded-xl transition-all ring-1 ring-inset ring-white/15"
+            className="btn-sheen inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-all ring-1 ring-inset ring-white/15"
           >
             <Plus size={15} />
             Upload first resume
@@ -66,51 +67,26 @@ export default async function DashboardPage() {
           {list.map((resume, i) => (
             <BlurFade key={resume.id} delay={Math.min(i, 8) * 55}>
             <SpotlightCard className="group relative h-full p-5">
-              {/* Score badge */}
-              {resume.ats_score != null && (
-                <div className={cn(
-                  'absolute top-4 right-4 font-mono text-sm font-bold',
-                  scoreColor(resume.ats_score)
-                )}>
-                  {Math.round(resume.ats_score)}
-                </div>
-              )}
-
               <div className="flex items-start gap-3 mb-4">
-                <div className="w-9 h-9 rounded-lg bg-violet-600/15 flex items-center justify-center shrink-0">
-                  <FileText size={16} className="text-violet-400" />
-                </div>
-                <div className="flex-1 min-w-0 pr-8">
+                {resume.ats_score != null ? (
+                  <MiniRing score={resume.ats_score} />
+                ) : (
+                  <div className="w-11 h-11 rounded-full border border-dashed border-white/15 flex items-center justify-center shrink-0" title="Not scored yet">
+                    <FileText size={16} className="text-slate-500" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm truncate mb-0.5">{resume.name}</h3>
-                  <p className="text-xs text-slate-500">Updated {formatDate(resume.updated_at)}</p>
+                  <p className="text-xs text-slate-500">
+                    {resume.ats_score != null ? 'ATS score' : 'Not scored yet'} · Updated {formatDate(resume.updated_at)}
+                  </p>
                 </div>
               </div>
-
-              {/* Score bar */}
-              {resume.ats_score != null && (
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-slate-500">ATS Score</span>
-                    <span className={cn('text-xs font-mono font-semibold', scoreColor(resume.ats_score))}>
-                      {Math.round(resume.ats_score)}/100
-                    </span>
-                  </div>
-                  <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${resume.ats_score}%`,
-                        background: resume.ats_score >= 70 ? '#34d399' : resume.ats_score >= 45 ? '#fbbf24' : '#f87171'
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
 
               {/* Template badge */}
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-600 capitalize">{resume.template_id} template</span>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity relative z-10">
+                <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity relative z-10">
                   <DeleteResumeButton resumeId={resume.id} />
                 </div>
               </div>
@@ -135,8 +111,8 @@ export default async function DashboardPage() {
                 ? Math.round(Math.max(...list.map(r => r.ats_score ?? 0)))
                 : '—' },
           ].map(stat => (
-            <div key={stat.label} className="bg-[#16161d] border border-white/7 rounded-xl p-4 text-center transition-colors hover:border-white/12">
-              <p className="text-2xl font-bold font-mono mb-1">{typeof stat.value === 'number' ? <CountUp value={stat.value} /> : stat.value}</p>
+            <div key={stat.label} className="bg-[#16181b] border border-white/7 rounded-xl p-4 text-center transition-colors hover:border-white/12">
+              <p className="text-2xl font-bold font-mono mb-1">{typeof stat.value === 'number' ? <AnimatedNumber value={stat.value} initialFrom={0} /> : stat.value}</p>
               <p className="text-xs text-slate-500">{stat.label}</p>
             </div>
           ))}

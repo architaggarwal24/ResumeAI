@@ -172,7 +172,7 @@ function ContactStep({ data, update }: StepProps) {
             <input value={(data[field] as string) || ''}
               onChange={e => update({ [field]: e.target.value })}
               placeholder={placeholder}
-              className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
+              className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
           </div>
         ))}
       </div>
@@ -188,7 +188,7 @@ function SummaryStep({ data, update, aiImprove, aiLoading }: StepProps) {
       <textarea rows={5} value={data.summary}
         onChange={e => update({ summary: e.target.value })}
         placeholder="Results-driven software engineer with 5+ years building scalable web applications…"
-        className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3" />
+        className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3" />
       <Button size="sm" loading={aiLoading} disabled={!data.summary.trim()}
         onClick={async () => { const improved = await aiImprove('professional summary', data.summary); update({ summary: improved }) }}>
         <Sparkles size={12} />AI Improve
@@ -228,7 +228,7 @@ function ExperienceStep({ data, update, aiImprove, aiLoading }: StepProps) {
                 <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1 block">{lbl}</label>
                 <input value={(exp[fld] as string) || ''} onChange={e => updateExp(ei, { [fld]: e.target.value })}
                   placeholder={lbl}
-                  className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
+                  className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
               </div>
             ))}
           </div>
@@ -238,7 +238,7 @@ function ExperienceStep({ data, update, aiImprove, aiLoading }: StepProps) {
               <span className="text-slate-600 mt-2.5 text-xs shrink-0">•</span>
               <input value={bul.text} onChange={e => updateBullet(ei, bi, e.target.value)}
                 placeholder="Achieved X by doing Y, resulting in Z…"
-                className="flex-1 bg-[#1c1c24] border border-white/8 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
+                className="flex-1 bg-[#1c1f23] border border-white/8 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
               <Button size="sm" loading={aiLoading} disabled={!bul.text.trim()}
                 onClick={async () => { const imp = await aiImprove(`job bullet for ${exp.title} at ${exp.company}`, bul.text); updateBullet(ei, bi, imp) }}>
                 <Sparkles size={11} />
@@ -276,7 +276,7 @@ function EducationStep({ data, update }: Pick<StepProps, 'data' | 'update'>) {
                 <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1 block">{lbl}</label>
                 <input value={(edu[fld] as string) || ''} onChange={e => updateEdu(ei, { [fld]: e.target.value })}
                   placeholder={lbl}
-                  className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
+                  className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
               </div>
             ))}
           </div>
@@ -295,12 +295,12 @@ function SkillsStep({ data, update }: Pick<StepProps, 'data' | 'update'>) {
           <div className="flex items-center gap-2 mb-3">
             <input value={cat.name} onChange={e => { const cats = [...data.skills.categories]; cats[ci] = { ...cats[ci], name: e.target.value }; update({ skills: { ...data.skills, categories: cats } }) }}
               placeholder="Category (e.g. Languages)"
-              className="flex-1 bg-[#1c1c24] border border-white/8 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50" />
+              className="flex-1 bg-[#1c1f23] border border-white/8 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50" />
             <button onClick={() => update({ skills: { ...data.skills, categories: data.skills.categories.filter((_, i) => i !== ci) } })} className="text-slate-600 hover:text-red-400"><Trash2 size={13} /></button>
           </div>
           <input value={cat.items.join(', ')} onChange={e => { const cats = [...data.skills.categories]; cats[ci] = { ...cats[ci], items: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }; update({ skills: { ...data.skills, categories: cats } }) }}
             placeholder="React, TypeScript, Node.js, PostgreSQL"
-            className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
+            className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
         </Card>
       ))}
       <Button onClick={() => update({ skills: { ...data.skills, categories: [...data.skills.categories, { name: '', items: [] }] } })}>

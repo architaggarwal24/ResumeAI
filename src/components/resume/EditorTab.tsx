@@ -52,13 +52,13 @@ function EditableField({
           {multiline ? (
             <textarea
               rows={4} value={local} onChange={e => setLocal(e.target.value)} autoFocus
-              className="w-full bg-[#1c1c24] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 resize-none"
+              className="w-full bg-[#1c1f23] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 resize-none"
             />
           ) : (
             <input
               value={local} onChange={e => setLocal(e.target.value)} autoFocus
               onKeyDown={e => e.key === 'Enter' && save()}
-              className="w-full bg-[#1c1c24] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"
+              className="w-full bg-[#1c1f23] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"
             />
           )}
           <div className="flex gap-2">
@@ -74,7 +74,7 @@ function EditableField({
           onClick={() => { setLocal(value); setEditing(true) }}
           className={cn(
             'group relative cursor-pointer px-3 py-2 rounded-lg text-sm transition-colors min-h-[36px]',
-            'bg-[#1c1c24] border border-white/7 hover:border-white/15',
+            'bg-[#1c1f23] border border-white/7 hover:border-white/15',
             dirtyFields.has(id) && 'border-violet-500/30',
           )}
         >
@@ -412,7 +412,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
                   return { ...p, skills: { ...p.skills, categories } }
                 })}
                 placeholder="Category (e.g. Languages)"
-                className="w-40 bg-[#1c1c24] border border-white/8 rounded-md px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50"
+                className="w-40 bg-[#1c1f23] border border-white/8 rounded-md px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50"
               />
               <button
                 className="text-slate-600 hover:text-red-400 transition-colors"
@@ -431,7 +431,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
                 return { ...p, skills: { ...p.skills, categories } }
               })}
               placeholder="skill1, skill2, skill3"
-              className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"
+              className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"
             />
           </div>
         ))}

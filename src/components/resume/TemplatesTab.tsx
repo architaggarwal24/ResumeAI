@@ -112,7 +112,7 @@ export function TemplatesTab({ resumeId }: { resumeId: string }) {
                 </div>
               )}
             </div>
-            <div className="p-3 bg-[#16161d]">
+            <div className="p-3 bg-[#16181b]">
               <div className="flex items-center justify-between mb-0.5">
                 <p className="font-semibold text-sm">{t.name}</p>
                 {selectedTemplate === t.id && <span className="text-xs font-mono text-violet-400 bg-violet-400/10 px-1.5 py-0.5 rounded">Active</span>}

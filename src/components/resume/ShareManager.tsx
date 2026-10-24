@@ -1,7 +1,8 @@
 // src/components/resume/ShareManager.tsx
 'use client'
 import { useState, useEffect } from 'react'
-import { Link2, Copy, Trash2, Plus, Eye, Lock, Calendar, Loader2, Check } from 'lucide-react'
+import { Link2, Trash2, Plus, Eye, Lock, Calendar, Loader2 } from 'lucide-react'
+import { CopyButton } from '@/components/ui/fx/CopyButton'
 import { Button, Card } from '@/components/ui/primitives'
 import { cn, formatDate } from '@/lib/utils'
 
@@ -22,7 +23,6 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
   const [showForm, setShowForm] = useState(false)
   const [password, setPassword] = useState('')
   const [expireDays, setExpire] = useState('')
-  const [copied, setCopied]     = useState<string | null>(null)
   const [error, setError]       = useState('')
 
   useEffect(() => {
@@ -60,12 +60,6 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
     setShares(p => p.filter(s => s.id !== id))
   }
 
-  async function copyUrl(url: string, id: string) {
-    await navigator.clipboard.writeText(url)
-    setCopied(id)
-    setTimeout(() => setCopied(null), 2000)
-  }
-
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -87,13 +81,13 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
               <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1"><Lock size={10}/>Password (optional)</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="Leave blank for public (min 6 chars)" minLength={6} maxLength={128} autoComplete="new-password"
-                className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
+                className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
             </div>
             <div>
               <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1"><Calendar size={10}/>Expires in (days)</label>
               <input type="number" min={1} max={365} step={1} value={expireDays} onChange={e => setExpire(e.target.value)}
                 placeholder="Never"
-                className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
+                className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
             </div>
           </div>
           {error && <p role="alert" className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2 mb-3">{error}</p>}
@@ -118,18 +112,12 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
       ) : (
         <div className="space-y-2">
           {shares.map(share => (
-            <div key={share.id} className="bg-[#1c1c24] border border-white/8 rounded-xl px-4 py-3">
+            <div key={share.id} className="bg-[#1c1f23] border border-white/8 rounded-xl px-4 py-3">
               <div className="flex items-center gap-3 mb-2">
                 <code className="flex-1 text-xs text-violet-300 truncate font-mono bg-violet-500/8 px-2 py-1 rounded">
                   {share.url}
                 </code>
-                <button onClick={() => copyUrl(share.url, share.id)}
-                  className={cn('shrink-0 text-xs flex items-center gap-1 px-2 py-1 rounded transition-all',
-                    copied === share.id
-                      ? 'text-emerald-400 bg-emerald-400/10'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5')}>
-                  {copied === share.id ? <><Check size={11}/>Copied</> : <><Copy size={11}/>Copy</>}
-                </button>
+                <CopyButton value={share.url} />
                 <button onClick={() => revokeShare(share.id)}
                   className="shrink-0 text-slate-600 hover:text-red-400 transition-colors p-1">
                   <Trash2 size={13} />

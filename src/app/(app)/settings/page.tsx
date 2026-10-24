@@ -129,7 +129,7 @@ export default function SettingsPage() {
         <div>
           <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">Email</label>
           <input value={userEmail} disabled
-            className="w-full bg-[#1c1c24]/50 border border-white/5 rounded-lg px-3 py-2 text-sm text-slate-400 cursor-not-allowed"/>
+            className="w-full bg-[#1c1f23]/50 border border-white/5 rounded-lg px-3 py-2 text-sm text-slate-400 cursor-not-allowed"/>
         </div>
       </Card>
 
@@ -144,7 +144,7 @@ export default function SettingsPage() {
         </p>
 
         {/* Provider tabs */}
-        <div className="flex gap-1 p-1 bg-[#0c0c0f] rounded-lg mb-4 overflow-x-auto">
+        <div className="flex gap-1 p-1 bg-[#0b0c0d] rounded-lg mb-4 overflow-x-auto">
           {(Object.keys(PROVIDERS) as LLMProvider[]).map(id => (
             <button key={id}
               className={cn(
@@ -170,7 +170,7 @@ export default function SettingsPage() {
                     value={byokCreds.apiKey}
                     onChange={e => { setApiKey(e.target.value); setTestResult(null) }}
                     placeholder={cfg.placeholder}
-                    className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
+                    className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
                   />
                   <button
                     onClick={() => setShowKeys(p => ({ ...p, [byokCreds.provider]: !p[byokCreds.provider] }))}
@@ -191,7 +191,7 @@ export default function SettingsPage() {
                 if (e.target.value === '__custom__') setShowCustom(true)
                 else if (e.target.value !== '__custom_active__') { setModel(e.target.value); setShowCustom(false) }
               }}
-              className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 mb-2"
+              className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 mb-2"
             >
               {cfg.models.map(m => <option key={m} value={m}>{m}</option>)}
               {isCustomModel && <option value="__custom_active__">{byokCreds.model} (custom)</option>}
@@ -203,7 +203,7 @@ export default function SettingsPage() {
                 <input value={customModel} onChange={e => setCustomModel(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && applyCustomModel()}
                   placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. nvidia/nemotron-3-nano-30b-a3b' : 'model ID'} autoFocus
-                  className="flex-1 bg-[#1c1c24] border border-violet-500/40 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/70"/>
+                  className="flex-1 bg-[#1c1f23] border border-violet-500/40 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/70"/>
                 <button onClick={applyCustomModel} className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-lg">Use</button>
                 <button onClick={() => setShowCustom(false)} className="px-2 py-1.5 bg-white/5 text-slate-400 text-xs rounded-lg">✕</button>
               </div>
@@ -305,7 +305,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2">
               <input value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)}
                 placeholder='Type "DELETE" to confirm'
-                className="bg-[#1c1c24] border border-red-500/20 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-red-500/40 w-48"/>
+                className="bg-[#1c1f23] border border-red-500/20 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-red-500/40 w-48"/>
               <Button variant="danger" size="sm" disabled={deleteConfirm !== 'DELETE' || deleting}
                 onClick={deleteAllData} loading={deleting}>
                 <Trash2 size={12}/>Delete Everything

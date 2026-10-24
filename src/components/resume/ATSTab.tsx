@@ -128,7 +128,7 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
           value={localJD}
           onChange={e => setLocalJD(e.target.value)}
           placeholder="Paste the full job description here…"
-          className="w-full bg-[#1c1c24] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3"
+          className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3"
         />
         <Button variant="primary" onClick={runATS} loading={isLoading} disabled={!localJD.trim()}>
           <Zap size={13} />
@@ -235,7 +235,7 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
                         'border rounded-xl overflow-hidden transition-all',
                         isAccepted  ? 'border-emerald-500/30 bg-emerald-500/5'  :
                         isDismissed ? 'border-white/5 opacity-40'               :
-                                      'border-white/8 bg-[#16161d] hover:border-white/15'
+                                      'border-white/8 bg-[#16181b] hover:border-white/15'
                       )}
                     >
                       {/* Collapsed row — always shows quick Apply + Dismiss */}

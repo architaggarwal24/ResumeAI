@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useResumeStore, hashResumeData } from '@/store/resumeStore'
 import { Button, SectionBlock, StrengthBadge, ScoreBar, Badge } from '@/components/ui/primitives'
+import { ScoreGauge } from '@/components/ui/viz/ScoreGauge'
+import { RadarChart } from '@/components/ui/viz/RadarChart'
+import { AgentSteps } from '@/components/ui/fx/AgentSteps'
 import { PointerSuggestion } from './PointerSuggestion'
 import { GenerateSectionBox } from './GenerateSectionBox'
 import { SectionSuggestion } from './SectionSuggestion'
@@ -55,9 +58,6 @@ function normalizeAnalysis(r: AnalysisResult): AnalysisResult {
     ) as AnalysisResult['sections'] : r.sections,
   }
 }
-
-const ringColor = (score: number) =>
-  score >= 70 ? '#34d399' : score >= 45 ? '#fbbf24' : '#f87171'
 
 // Whether a section is empty enough to offer AI generation for it
 function isSectionEmpty(section: GeneratableSection, resumeData: ScoreTabResumeData | null): boolean {
@@ -292,6 +292,14 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
         .sort((a, b) => safeResult.sections[a].score - safeResult.sections[b].score)[0]
     : null
 
+  // Per-section scores for the radar chart (only sections the model returned).
+  const radarData = safeResult
+    ? SECTION_ORDER.flatMap(k => {
+        const sec = safeResult.sections?.[k]
+        return sec ? [{ label: k, value: Math.round(sec.score) }] : []
+      })
+    : []
+
   return (
     <div className="mx-auto px-6 py-6 max-w-3xl">
       <div className="flex items-center justify-between mb-6">
@@ -348,14 +356,18 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
         </div>
       )}
 
-      {/* Loading skeleton */}
+      {/* Loading: step-by-step progress instead of a blank skeleton */}
       {isLoading && !analysisResult && (
-        <div className="space-y-3">
-          <div className="h-32 rounded-xl bg-white/5 animate-pulse" />
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
-          ))}
-        </div>
+        <AgentSteps
+          className="max-w-md mx-auto"
+          steps={[
+            'Reading your resume',
+            'Checking structure and formatting',
+            'Scoring each section',
+            'Drafting the recruiter verdict',
+            'Finding your quickest wins',
+          ]}
+        />
       )}
 
       {!analysisResult && !isLoading && !byokCreds.apiKey && (
@@ -368,8 +380,8 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
       {safeResult && (
         <div className="space-y-4 fade-in">
           {/* ─── Hero: score + verdict in one glance ─────────────────────── */}
-          <div className="bg-[#16161d] border border-white/7 rounded-xl p-5 flex flex-col sm:flex-row items-center gap-5">
-            <ScoreRing score={safeResult.atsScore} />
+          <div className="bg-[#16181b] border border-white/7 rounded-xl p-5 flex flex-col sm:flex-row items-center gap-6">
+            <ScoreGauge score={safeResult.atsScore} size={168} className="shrink-0" />
 
             <div className="flex-1 min-w-0 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-1.5 flex-wrap">
@@ -377,9 +389,10 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                 {safeResult.recruiterVerdict && <VerdictBadge verdict={safeResult.recruiterVerdict.verdict} />}
               </div>
               {safeResult.recruiterVerdict && (
-                <p className="text-sm text-slate-300 leading-relaxed">{safeResult.recruiterVerdict.headline}</p>
+                <p className="font-display text-lg text-slate-200 leading-snug">{safeResult.recruiterVerdict.headline}</p>
               )}
             </div>
+            {radarData.length >= 3 && <RadarChart data={radarData} size={200} className="hidden md:block shrink-0" />}
           </div>
 
           {/* ─── Section breakdown — compact collapsible rows ────────────── */}
@@ -584,7 +597,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                   </p>
                   <div className="space-y-2">
                     {safeResult.topFixes.map((fix, i) => (
-                      <div key={i} className="border border-white/7 rounded-xl overflow-hidden bg-[#1c1c24]">
+                      <div key={i} className="border border-white/7 rounded-xl overflow-hidden bg-[#1c1f23]">
                         <div className="flex items-center gap-2 px-3 py-2 border-b border-white/7">
                           <span className={cn('text-xs font-mono font-bold w-4 text-center',
                             fix.impact === 'high' ? 'text-red-400' :
@@ -733,30 +746,6 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
   )
 }
 
-// ─── Score ring ─────────────────────────────────────────────────────────────
-
-function ScoreRing({ score }: { score: number }) {
-  const r = 36
-  const c = 2 * Math.PI * r
-  const offset = c * (1 - Math.min(100, Math.max(0, score)) / 100)
-  return (
-    <div className="relative w-24 h-24 shrink-0">
-      <svg viewBox="0 0 84 84" className="w-24 h-24 -rotate-90">
-        <circle cx="42" cy="42" r={r} fill="none" stroke="currentColor" strokeWidth="6" className="text-white/5" />
-        <circle
-          cx="42" cy="42" r={r} fill="none" stroke={ringColor(score)} strokeWidth="6"
-          strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
-          className="transition-all duration-700"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={cn('text-2xl font-bold font-mono', scoreColor(score))}>{score}</span>
-        <span className="text-[10px] text-slate-500 -mt-0.5">/100</span>
-      </div>
-    </div>
-  )
-}
-
 // ─── Section row (collapsible) ─────────────────────────────────────────────
 
 function SectionRow({
@@ -772,7 +761,7 @@ function SectionRow({
   const Icon = meta.icon
 
   return (
-    <div className="border border-white/7 rounded-xl overflow-hidden bg-[#16161d]">
+    <div className="border border-white/7 rounded-xl overflow-hidden bg-[#16181b]">
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-colors text-left"
