@@ -21,7 +21,7 @@ const PARSE_TIMEOUT_MS = 30_000
 
 interface TextItem { str?: string; transform?: number[] }
 interface PDFPageProxy { getTextContent: () => Promise<{ items: TextItem[] }>; cleanup?: () => void }
-interface PDFDocumentProxy { numPages: number; getPage: (n: number) => Promise<PDFPageProxy>; destroy: () => Promise<void> }
+interface PDFDocumentProxy { numPages: number; getPage: (n: number) => Promise<PDFPageProxy> }
 interface PdfJsModule {
   GlobalWorkerOptions: { workerSrc: string }
   getDocument: (opts: Record<string, unknown>) => { promise: Promise<PDFDocumentProxy>; destroy?: () => Promise<void> }
@@ -86,7 +86,6 @@ export async function extractTextFromPDF(file: File): Promise<string> {
       if (pageText) pages.push(pageText)
       page.cleanup?.()
     }
-    await pdf.destroy()
 
     const fullText = pages.join('\n\n')
     if (fullText.trim().length < 100) {
@@ -97,6 +96,8 @@ export async function extractTextFromPDF(file: File): Promise<string> {
     return fullText
   } finally {
     clearTimeout(timeout)
+    // Cleanup lives on the *loading task* (PDFDocumentProxy has no destroy()). Never let it mask the result.
+    try { await task.destroy?.() } catch { /* already destroyed */ }
   }
 }
 

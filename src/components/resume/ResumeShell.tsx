@@ -12,20 +12,20 @@ import { ShareManager }   from './ShareManager'
 import { InterviewTab }   from './InterviewTab'
 import { ChatDrawer }     from '@/components/chat/ChatDrawer'
 import { cn }             from '@/lib/utils'
-import { SlidingTabs }    from '@/components/ui/fx/SlidingTabs'
+import SmoothTab, { type SwipeTabItem } from '@/components/vendor/kokonut/smooth-tab'
 import type { ResumeRow, AnalysisResult, ResumeTab } from '@/types/resume'
 import { BarChart2, Edit3, Zap, Layout, FileText, History, Link2, ChevronLeft, BriefcaseIcon } from 'lucide-react'
 import Link from 'next/link'
 
-const TABS: { id: ResumeTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'score',        label: 'Score',        icon: <BarChart2 size={14}/> },
-  { id: 'editor',       label: 'Edit',         icon: <Edit3     size={14}/> },
-  { id: 'ats',          label: 'ATS vs JD',    icon: <Zap       size={14}/> },
-  { id: 'interview',    label: 'Interview',    icon: <BriefcaseIcon size={14}/> },
-  { id: 'templates',    label: 'Templates',    icon: <Layout    size={14}/> },
-  { id: 'cover-letter', label: 'Cover Letter', icon: <FileText  size={14}/> },
-  { id: 'history',      label: 'History',      icon: <History   size={14}/> },
-  { id: 'share',        label: 'Share',        icon: <Link2     size={14}/> },
+const TABS: SwipeTabItem[] = [
+  { id: 'score',        title: 'Score',        icon: BarChart2 },
+  { id: 'editor',       title: 'Edit',         icon: Edit3 },
+  { id: 'ats',          title: 'ATS vs JD',    icon: Zap },
+  { id: 'interview',    title: 'Interview',    icon: BriefcaseIcon },
+  { id: 'templates',    title: 'Templates',    icon: Layout },
+  { id: 'cover-letter', title: 'Cover Letter', icon: FileText },
+  { id: 'history',      title: 'History',      icon: History },
+  { id: 'share',        title: 'Share',        icon: Link2 },
 ]
 
 interface Props { resume: ResumeRow; initialAnalysis: AnalysisResult | null }
@@ -61,8 +61,16 @@ export function ResumeShell({ resume, initialAnalysis }: Props) {
       </div>
 
       {/* Tab bar */}
-      <div className="px-4 border-b border-white/7 bg-[#111214] shrink-0">
-        <SlidingTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
+      <div className="px-4 py-2.5 border-b border-white/7 bg-[#111214] shrink-0 overflow-x-auto">
+        <SmoothTab
+          items={TABS}
+          value={activeTab}
+          onChange={id => setActiveTab(id as ResumeTab)}
+          label="Resume sections"
+          className="min-w-[760px] max-w-3xl"
+          activeColor="bg-violet-400"
+          activeTextColor="text-[#04241f]"
+        />
       </div>
 
       {/* Content */}

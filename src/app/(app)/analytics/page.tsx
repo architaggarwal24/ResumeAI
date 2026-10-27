@@ -6,10 +6,10 @@ import Link from 'next/link'
 import { cn, scoreColor } from '@/lib/utils'
 import { BarChart2, TrendingUp, TrendingDown, Minus, FileText, Award, RefreshCw, ChevronRight } from 'lucide-react'
 import { Card, CardSm, ScoreBar } from '@/components/ui/primitives'
-import { AnimatedNumber } from '@/components/ui/fx/AnimatedNumber'
+import CountUp from '@/components/vendor/react-bits/CountUp'
 import { BlurFade } from '@/components/ui/fx/BlurFade'
-import { AreaChart } from '@/components/ui/viz/AreaChart'
-import { ActivityCalendar } from '@/components/ui/viz/ActivityCalendar'
+import { AreaChart, Area, Grid, XAxis, ChartTooltip } from '@/components/vendor/bklit'
+import { ContributionGraph, type ContributionData } from '@/components/vendor/smoothui/contribution-graph'
 import { dayKey } from '@/lib/dates'
 import type { AnalyticsDashboard, ResumeAnalyticsSummary, ScoreDataPoint } from '@/types/resume'
 
@@ -31,11 +31,14 @@ export default function AnalyticsPage() {
   const selectedResume = data.resumes.find(r => r.resumeId === selected)
 
   // Every analysis run, bucketed by local day, for the activity calendar.
-  const activity: Record<string, number> = {}
+  const counts: Record<string, number> = {}
   for (const r of data.resumes) for (const pt of r.scoreHistory) {
     const d = new Date(pt.date)
-    if (!Number.isNaN(d.getTime())) activity[dayKey(d)] = (activity[dayKey(d)] ?? 0) + 1
+    if (!Number.isNaN(d.getTime())) counts[dayKey(d)] = (counts[dayKey(d)] ?? 0) + 1
   }
+  const activity: ContributionData[] = Object.entries(counts).map(([date, count]) => ({
+    date, count, level: count >= 5 ? 4 : count >= 3 ? 3 : count === 2 ? 2 : 1,
+  }))
 
   return (
     <div className="mx-auto px-4 sm:px-8 py-8 max-w-6xl fade-in">
@@ -59,7 +62,7 @@ export default function AnalyticsPage() {
             <Card className="text-center py-5">
               <div className="flex justify-center text-violet-400 mb-2">{stat.icon}</div>
               <p className="text-3xl font-bold font-mono mb-1">
-                {typeof stat.value === 'number' ? <AnimatedNumber value={stat.value} initialFrom={0} /> : stat.value}
+                {typeof stat.value === 'number' ? <CountUp to={stat.value} duration={1.2} /> : stat.value}
               </p>
               <p className="text-xs text-slate-500">{stat.label}</p>
             </Card>
@@ -70,7 +73,7 @@ export default function AnalyticsPage() {
       {/* Activity calendar */}
       <Card className="mb-8">
         <p className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-3">Analysis activity</p>
-        <ActivityCalendar counts={activity} />
+        <div className="overflow-x-auto"><div className="min-w-[640px]"><ContributionGraph data={activity} /></div></div>
       </Card>
 
       {data.mostImproved && (
@@ -251,12 +254,21 @@ function ResumeDetail({ resume }: { resume: ResumeAnalyticsSummary }) {
 }
 
 function ScoreHistoryChart({ history }: { history: ScoreDataPoint[] }) {
-  if (history.length === 0) return null
-  const data = history.map(h => ({
-    label: h.label || new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    value: Math.round(h.score),
-  }))
-  return <AreaChart data={data} />
+  const data = history
+    .map(h => ({ date: new Date(h.date), score: Math.round(h.score) }))
+    .filter(d => !Number.isNaN(d.date.getTime()))
+  if (data.length < 2) {
+    return <p className="py-8 text-center text-xs text-slate-500">Run at least two analyses to see a trend.</p>
+  }
+  // Bklit UI area chart: composable parts (grid, area, axis, tooltip).
+  return (
+    <AreaChart data={data} aspectRatio="3 / 1" animationDuration={1000}>
+      <Grid horizontal />
+      <Area dataKey="score" strokeWidth={2.5} fillOpacity={0.35} />
+      <XAxis />
+      <ChartTooltip />
+    </AreaChart>
+  )
 }
 
 function ImprovementChip({ improvement }: { improvement: number }) {

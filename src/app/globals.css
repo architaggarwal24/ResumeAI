@@ -39,6 +39,95 @@
   --marker:  #fbbf24;
 }
 
+
+/* ─── Design tokens for vendored component libraries ───────────────────────────
+ * Kokonut UI, SmoothUI, unlumen UI and Bklit UI are written against shadcn-style
+ * tokens (bg-background, text-muted-foreground, border-border, --chart-*…).
+ * This app is dark-only, so they are defined once here, mapped to our palette.
+ * `.dark` is set on <html> (layout.tsx) so their `dark:` variants always apply,
+ * regardless of the OS colour scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #0b0c0d;
+  --foreground: #e6ebee;
+  --card: #16181b;
+  --card-foreground: #e6ebee;
+  --popover: #16181b;
+  --popover-foreground: #e6ebee;
+  --primary: #3cc9ae;
+  --primary-foreground: #04241f;
+  --secondary: #1c1f23;
+  --secondary-foreground: #e6ebee;
+  --muted: #1c1f23;
+  --muted-foreground: #8b949e;
+  --accent: #1c1f23;
+  --accent-foreground: #e6ebee;
+  --destructive: #f87171;
+  --border: rgba(255, 255, 255, 0.09);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #3cc9ae;
+  --radius: 0.75rem;
+  --radius-xl: 1rem;
+  --color-brand-base: #3cc9ae;
+  --color-brand: #3cc9ae;
+
+  /* Bklit chart tokens (dark) */
+  --chart-1: #3cc9ae;
+  --chart-2: #fbbf24;
+  --chart-3: #60a5fa;
+  --chart-4: #f472b6;
+  --chart-5: #e5e7eb;
+  --chart-positive: #34d399;
+  --chart-negative: #f87171;
+  --chart-background: #111214;
+  --chart-foreground: #8b949e;
+  --chart-foreground-muted: #6b747c;
+  --chart-line-primary: var(--chart-1);
+  --chart-line-secondary: var(--chart-2);
+  --chart-crosshair: #a7b0b8;
+  --chart-grid: rgba(255, 255, 255, 0.09);
+  --chart-brush-border: var(--chart-grid);
+  --chart-indicator-color: #ffffff;
+  --chart-indicator-secondary-color: #111214;
+  --chart-marker-background: #1c1f23;
+  --chart-marker-border: #3a4047;
+  --chart-marker-foreground: #e6ebee;
+  --chart-marker-badge-background: #ffffff;
+  --chart-marker-badge-foreground: #111214;
+  --chart-segment-background: rgba(255, 255, 255, 0.05);
+  --chart-segment-line: rgba(255, 255, 255, 0.25);
+  --chart-tooltip-background: var(--popover);
+  --chart-tooltip-foreground: var(--popover-foreground);
+  --chart-tooltip-muted: var(--muted-foreground);
+  --chart-label: #aeb7bf;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--color-brand-base);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
 * { box-sizing: border-box; }
 
 html { color-scheme: dark; }

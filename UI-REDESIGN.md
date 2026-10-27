@@ -1,43 +1,36 @@
-# UI redesign notes
+# UI redesign — real components from your reference sites
 
-## What I could and couldn't use from the reference sites
+## What I used (source copied under each library's licence)
 
-All eleven were reviewed. None of their code was copied: most are copy-paste libraries with Pro tiers or "no-license" listings, and I couldn't run their CLIs here. Every component below is an original implementation of a *pattern* those sites showcase, with no new dependencies.
+All vendored files live in `src/components/vendor/<library>/`, each starting with an attribution comment. Full licence texts are in `THIRD_PARTY_NOTICES.md`.
 
-| Site | What it is | What I took |
-|---|---|---|
-| **bklit.com** | Chart components | Gauge, radar and area charts (`ScoreGauge`, `RadarChart`, `AreaChart`) |
-| **kokonutui.com** | AI-flavoured shadcn components | Agent-step loader (`AgentSteps`), score ring (`MiniRing`), swipe tabs (`SlidingTabs`), marker text (`.marker`), magnet button (`Magnetic`), file-drop states |
-| **componentry.dev** | Animated heroes / text | Flipping word swap (`FlipWords`), grain-gradient backdrop (`Aurora`), contribution calendar (`ActivityCalendar`) |
-| **ui.unlumen.com** | shadcn animation library (blocks bots; reviewed via search snippets) | Gliding hover highlight (sidebar nav, tabs), copy-button icon pop (`CopyButton`), cursor spotlight |
-| **smoothui.dev** | Animated shadcn components + design essays | Number-flow digits (`AnimatedNumber`), stats strip + FAQ blocks. Its "AI design slop" essay is why I moved off purple gradients/glass |
-| **uiarc.dev** | Motion-first React components | Count-to-value numbers, inline confirm-with-timer (`DeleteResumeButton`), title reveals |
-| **reactbits.dev** | Animated React components | Shiny text, spotlight card, blur-in reveals, rotating border beam |
-| **originkit.dev** | Animated component library | Page rendered client-side, so I got no readable content. Nothing taken |
-| **animmasterlib.dev** | Paid component pack (Google Drive delivery) | Nothing: paid code, can't and shouldn't replicate |
-| **animos.app / swishy.ai** | Video/motion-export tools, not UI libraries | Nothing in-app. Useful later for a landing-page demo video |
+| Site | Licence | Components now in the app | Where |
+|---|---|---|---|
+| **reactbits.dev** | MIT + Commons Clause | SoftAurora (WebGL hero), BlurText, RotatingText, ShinyText, CountUp, ScrollVelocity, StarBorder, Magnet, ClickSpark, SpotlightCard, HoldButton | Landing, dashboard, analytics, sidebar brand, hold-to-delete |
+| **kokonutui.com** | MIT | MarkerText, BackgroundPaths, SmoothTab, AI Loading State, FileUpload | Hero headline, login/signup, editor tabs, scoring + import progress, PDF upload |
+| **smoothui.dev** | MIT | FloatInput, ContributionGraph, ScrollRevealParagraph, FAQ block | Auth fields, analytics + landing activity graph, landing |
+| **ui.unlumen.com** | MIT | Highlight (gliding hover/active background) | Sidebar nav, landing nav |
+| **bklit.com** | MIT | Gauge, RadarChart, AreaChart, AreaSparkline (+ the shared chart files they need) | Score tab, landing demo, analytics, dashboard |
 
-## Identity change (and why)
+**Not used, and why:** originkit.dev (repo is only a plugin that fetches components behind an API key), animmasterlib.dev (paid pack), animos.app and swishy.ai (video-export tools, not UI libraries).
+Three vendored files have small, commented modifications (see notices).
 
-The previous pass was violet gradients + frosted glass + six identical cards: the exact "AI slop" look SmoothUI's essay criticises. New direction, "editor's desk":
+## New packages
+`motion`, `@number-flow/react`, `@visx/{curve,event,grid,group,responsive,scale,shape}`, `d3-array`, `d3-shape`, `react-use-measure` (+ `@types/d3-*`). Run `npm install`.
 
-- **Ink-black neutral surfaces**, **verdigris teal** as the working colour, **amber highlighter** as the single emphasis accent (marker swipes, quick-win callouts, the logo dot).
-- **Serif display face** (system serif stack, so zero font downloads) for headings and big numbers.
-- The whole old `violet-*` scale is remapped in one `@theme` block in `globals.css`, so ~200 existing usages recolour without per-file edits.
-- Solid surfaces instead of backdrop blur; ruled-paper texture and grain instead of glowing blobs.
+## What changed on screen
+- **Landing:** WebGL aurora behind the hero, hand-drawn marker highlight on the headline, word-blur-in copy, rotating audience pill, star-border CTA with magnetic pull, cursor spark on click, live Bklit gauge + radar demo, provider marquee that reacts to scroll speed, scroll-driven text reveal, count-up stats, spotlight bento tiles, activity graph, FAQ.
+- **Login / signup:** split layout, interactive flowing-line canvas, floating-label inputs.
+- **Dashboard + sidebar:** animated title, count-up stats with a sparkline, spotlight cards with score rings, hold-to-delete, gliding nav highlight.
+- **Resume editor:** pill tabs with a sliding indicator; Bklit gauge + radar; Kokonut agent-style loader (live timer and log lines) while scoring.
+- **Analytics:** Bklit area chart with tooltip, contribution graph, count-up stats.
+- **Upload:** Kokonut drop zone → real 3-step progress.
+- Responsive: mobile drawer nav, single-column bento, scrollable tabs. Motion respects `prefers-reduced-motion` where the libraries support it.
 
-## Where the new pieces live
+## How I checked it
+I installed dependencies in a scratch copy, ran a real `next build` (type-check included), served it, and took screenshots with headless Chromium at desktop and mobile widths. For logged-in screens I used a preview harness with mock data (not shipped). This caught several bugs I fixed: server→client function props, radar label clipping, aurora colour, FAQ background, marquee rows, mobile grid overflow, Bklit's out-of-date docs vs. its real types.
 
-- Landing page (`/`): left-aligned hero with rotating words and marker highlight, live gauge + radar sample, factual stats strip, asymmetric bento (each tile previews its feature), privacy block, FAQ.
-- Score tab: tick-mark gauge + radar replace the plain ring; step-by-step progress replaces the skeleton.
-- Resume editor: sliding-indicator tabs with keyboard arrows.
-- Analytics: area chart with hover tooltip, activity calendar, animated stats, responsive grid.
-- Dashboard: mini score rings (one score display instead of three), inline confirm-delete (also visible on touch/keyboard, which the old hover-only button wasn't).
-- Upload: keyboard-accessible drop zone, real 3-step progress, honest privacy copy.
-- Sidebar: gliding hover highlight; mobile drawer.
+**Not covered:** I haven't clicked through the real authenticated flows against Supabase, so test sign-in, upload → score → tailor, share links and export yourself. Pages I didn't redesign (jobs, settings, build, interview, cover letter, history, ATS tab) keep their layout but pick up the new colours and fonts.
 
-All motion respects `prefers-reduced-motion`. Charts expose `role="img"` with text labels.
-
-## Not verified
-
-I can't run a browser here: check spacing, contrast and the CSS `@property`/mask effects visually, and run `npm run build` (your last build is the only real compile this code has had).
+## Tips
+- WebGL aurora and canvas paths are the heaviest effects. To tone them down, remove `SoftAurora` from `src/app/page.tsx` or lower `count` on `BackgroundPaths` in `AuthShell`.

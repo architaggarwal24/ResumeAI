@@ -1,6 +1,7 @@
 // src/app/(app)/upload/page.tsx
 'use client'
-import { AgentSteps } from '@/components/ui/fx/AgentSteps'
+import { AgentProgress } from '@/components/ui/fx/AgentProgress'
+import FileUpload from '@/components/vendor/kokonut/file-upload'
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, FileText, Loader2, Sparkles, Link2, Clipboard, AlertTriangle, X, Clock } from 'lucide-react'
@@ -93,8 +94,8 @@ export default function UploadPage() {
 
   const processPDF = useCallback(async (f: File) => {
     const validError = validatePDFFile(f)
-    if (validError) { setError(validError); return }
-    if (!byokCreds.apiKey) { setError('Enter your API key above first.'); return }
+    if (validError) { setError(validError); return validError }
+    if (!byokCreds.apiKey) { const m = 'Enter your API key above first.'; setError(m); return m }
 
     setFile(f); setError(''); setStep('reading')
     abortRef.current = new AbortController()
@@ -116,8 +117,9 @@ export default function UploadPage() {
       })
 
       await saveAndRedirect(parsed, rawText, f.name.replace('.pdf', ''))
+      return null
     } catch (err: unknown) {
-      if ((err as { name?: string }).name === 'AbortError') return // user cancelled
+      if ((err as { name?: string }).name === 'AbortError') return null // user cancelled
       setStep('idle')
       let msg = err instanceof Error ? err.message : 'Something went wrong'
       if (msg.includes('timed out') || msg.includes('aborted') || msg.includes('AbortError')) {
@@ -125,8 +127,15 @@ export default function UploadPage() {
       }
       setError(msg)
       addToast(msg, 'error', 8000)
+      return msg
     }
   }, [byokCreds, jd]) // eslint-disable-line
+
+  // Kokonut's FileUpload expects a rejected promise on failure.
+  async function handleUpload(f: File) {
+    const err = await processPDF(f)
+    if (err) throw new Error(err)
+  }
 
   async function importLinkedIn(usePaste = false) {
     if (!byokCreds.apiKey) { setLiError('Enter your API key above first.'); return }
@@ -213,91 +222,56 @@ export default function UploadPage() {
 
       {/* PDF mode */}
       {mode === 'pdf' && (
-        <Card className="mb-5 p-0 overflow-hidden">
-          <div
-            className={cn(
-              'relative border-2 border-dashed rounded-xl p-12 text-center transition-all',
-              isPDFProcessing ? 'pointer-events-none' : 'cursor-pointer',
-              drag           && 'border-violet-500 bg-violet-500/5',
-              !drag && !file && 'border-white/10 hover:border-white/20',
-              file && !isPDFProcessing && 'border-emerald-500/40 bg-emerald-500/5',
-              isPDFProcessing && 'border-violet-500/30 bg-violet-500/4',
-            )}
-            onDragOver={e => { e.preventDefault(); setDrag(true) }}
-            onDragLeave={() => setDrag(false)}
-            onDrop={e => { e.preventDefault(); setDrag(false); processPDF(e.dataTransfer.files[0]) }}
-            onClick={() => !isPDFProcessing && inputRef.current?.click()}
-            role="button" tabIndex={isPDFProcessing ? -1 : 0}
-            aria-label="Upload resume PDF: drop a file or press Enter to browse"
-            onKeyDown={e => { if (!isPDFProcessing && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); inputRef.current?.click() } }}
-          >
-            <input ref={inputRef} type="file" accept=".pdf" className="hidden"
-              onChange={e => e.target.files?.[0] && processPDF(e.target.files[0])} />
+        <div className="mb-5">
+          {isPDFProcessing ? (
+            <Card className="flex flex-col items-center gap-4 py-8">
+              <AgentProgress
+                className="w-full max-w-md"
+                activeIndex={['reading', 'parsing', 'saving'].indexOf(step)}
+                steps={[
+                  { label: 'Reading the PDF in your browser', detail: ['Extracting text locally'] },
+                  { label: 'Extracting structure with AI', detail: [`Model: ${getFastCreds(byokCreds).model}`] },
+                  { label: 'Saving to your account', detail: ['Creating your resume'] },
+                ]}
+              />
 
-            {isPDFProcessing ? (
-              <div className="flex flex-col items-center gap-3">
-                <AgentSteps
-                  className="w-full max-w-xs text-left"
-                  activeIndex={['reading', 'parsing', 'saving'].indexOf(step)}
-                  steps={['Reading the PDF in your browser', 'Extracting structure with AI', 'Saving to your account']}
-                />
-
-                {/* Elapsed + model name */}
-                {step === 'parsing' && (
-                  <div className="space-y-0.5 text-center">
-                    <p className="text-xs text-slate-500 font-mono tabular">
-                      {formatElapsed(elapsed)} · {getFastCreds(byokCreds).model}
-                    </p>
-                    {getFastCreds(byokCreds).model !== byokCreds.model && (
-                      <p className="text-xs text-slate-600">Auto-switched for faster extraction</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Slow model warning */}
-                {showSlowWarn && step === 'parsing' && (
-                  <div className="max-w-xs text-center fade-in">
-                    <p className="text-xs text-amber-300 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2 leading-relaxed">
-                      Still working — this model is slow. It will finish, just hang on.
-                      {modelSlowTip && ' Consider switching to gemini-2.0-flash next time.'}
-                    </p>
-                  </div>
-                )}
-
-                {/* Cancel button */}
-                {step === 'parsing' && (
-                  <button
-                    onClick={cancelParsing}
-                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition-colors mt-1"
-                  >
-                    <X size={12} />Cancel
-                  </button>
-                )}
-              </div>
-            ) : file ? (
-              <div className="flex flex-col items-center gap-2">
-                <div className="pop flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-400/10"><FileText size={24} className="text-emerald-400" /></div>
-                <p className="font-medium text-slate-200">{file.name}</p>
-                <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(0)} KB</p>
-                <p className="text-xs text-slate-600 mt-1">Click to choose a different file</p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-3">
-                <div className={cn("flex h-14 w-14 items-center justify-center rounded-2xl border transition-all duration-300", drag ? "border-violet-400/60 bg-violet-400/10 scale-110 shadow-[0_0_40px_-8px_rgba(60,201,174,0.7)]" : "border-white/10 bg-white/[0.03]")}><Upload size={24} className={drag ? "text-violet-300" : "text-slate-400"} /></div>
-                <div>
-                  <p className="font-medium text-slate-300">Drop your resume PDF here, or click to browse</p>
-                  <p className="text-xs text-slate-500 mt-1">PDF only · max 10MB · text is read in your browser, then structured by your AI provider</p>
+              {step === 'parsing' && (
+                <div className="space-y-0.5 text-center">
+                  <p className="text-xs text-slate-500 font-mono tabular">{formatElapsed(elapsed)} · {getFastCreds(byokCreds).model}</p>
+                  {getFastCreds(byokCreds).model !== byokCreds.model && (
+                    <p className="text-xs text-slate-600">Auto-switched for faster extraction</p>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
+              )}
 
-          {error && (
-            <div className="px-5 py-3 bg-red-500/10 border-t border-red-500/20">
-              <p className="text-sm text-red-400">{error}</p>
-            </div>
+              {showSlowWarn && step === 'parsing' && (
+                <p className="max-w-xs text-center text-xs text-amber-300 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2 leading-relaxed fade-in">
+                  Still working — this model is slow. It will finish, just hang on.
+                  {modelSlowTip && ' Consider switching to gemini-2.0-flash next time.'}
+                </p>
+              )}
+
+              {step === 'parsing' && (
+                <button onClick={cancelParsing} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition-colors">
+                  <X size={12} />Cancel
+                </button>
+              )}
+            </Card>
+          ) : (
+            <FileUpload
+              multiple={false}
+              maxFiles={1}
+              acceptedFileTypes={['application/pdf']}
+              className="max-w-none"
+              maxFileSize={10 * 1024 * 1024}
+              onUpload={handleUpload}
+            />
           )}
-        </Card>
+
+          {error && !isPDFProcessing && (
+            <p role="alert" className="mt-3 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p>
+          )}
+        </div>
       )}
 
       {/* LinkedIn mode */}

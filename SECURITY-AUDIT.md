@@ -90,3 +90,9 @@ Dependency-free equivalents of patterns popularised by the libraries you listed 
 - **Prompt injection** from resume/job text into the model is inherent. Model output is now sanitised before storage, which limits blast radius to the requesting user's own data.
 - **Supabase dashboard settings (not in code):** restrict Auth redirect URLs to exact production origins (no broad wildcards), enable email confirmation and leaked-password protection, set a stronger minimum password length than the client's 8.
 - `tsconfig.tsbuildinfo` shipped in the zip; `.gitignore` covers it but don't commit it.
+
+## Addendum: dependency audit and third-party UI code
+
+- `npm audit` could finally be run (dependencies were installed in a scratch copy). The lockfile pinned **Next.js 16.3.5**, which is inside several vulnerable ranges (including RCE advisories up to 16.4.0). Now pinned to **^16.4.3**, `sharp`, `source-map-js` and `zod` patched: **0 vulnerabilities** (prod and dev).
+- The new UI uses copied open-source component source (see `THIRD_PARTY_NOTICES.md`). I scanned it for network calls, `eval`, HTML injection, storage access and external URLs and found none. It adds npm dependencies (`motion`, visx, d3) that are covered by the audit above.
+- CSP is unchanged and works with the new components (verified with a production build in headless Chromium; no CSP violations in the console).

@@ -4,7 +4,30 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c3f647c9-4c61-4801-bb8e-8a6c68055e34" name="Changes" comment="" />
+    <list default="true" id="c3f647c9-4c61-4801-bb8e-8a6c68055e34" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SECURITY-AUDIT.md" beforeDir="false" afterPath="$PROJECT_DIR$/SECURITY-AUDIT.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/UI-REDESIGN.md" beforeDir="false" afterPath="$PROJECT_DIR$/UI-REDESIGN.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next-env.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(app)/analytics/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/analytics/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(app)/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/dashboard/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(app)/upload/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/upload/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/login/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(auth)/login/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(auth)/signup/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(auth)/signup/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/globals.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/auth/AuthShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/auth/AuthShell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/layout/AppShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/layout/AppShell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/DeleteResumeButton.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/DeleteResumeButton.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/ResumeShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/ResumeShell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/ScoreTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/ScoreTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/primitives.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/primitives.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/viz/MiniRing.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/viz/MiniRing.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/pdf/extract.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/pdf/extract.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -90,6 +113,7 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
@@ -145,6 +169,9 @@
       <workItem from="1790228065192" duration="402000" />
       <workItem from="1790318871200" duration="882000" />
       <workItem from="1792730421978" duration="2406000" />
+      <workItem from="1792840136783" duration="346000" />
+      <workItem from="1793048064791" duration="415000" />
+      <workItem from="1793077212834" duration="1044000" />
     </task>
     <servers />
   </component>

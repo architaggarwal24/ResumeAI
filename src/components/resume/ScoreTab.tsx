@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { useResumeStore, hashResumeData } from '@/store/resumeStore'
 import { Button, SectionBlock, StrengthBadge, ScoreBar, Badge } from '@/components/ui/primitives'
-import { ScoreGauge } from '@/components/ui/viz/ScoreGauge'
-import { RadarChart } from '@/components/ui/viz/RadarChart'
-import { AgentSteps } from '@/components/ui/fx/AgentSteps'
+import { Gauge, RadarChart, RadarGrid, RadarAxis, RadarLabels, RadarArea } from '@/components/vendor/bklit'
+import { AgentProgress } from '@/components/ui/fx/AgentProgress'
+import { scoreHex } from '@/lib/score'
 import { PointerSuggestion } from './PointerSuggestion'
 import { GenerateSectionBox } from './GenerateSectionBox'
 import { SectionSuggestion } from './SectionSuggestion'
@@ -358,14 +358,14 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
 
       {/* Loading: step-by-step progress instead of a blank skeleton */}
       {isLoading && !analysisResult && (
-        <AgentSteps
-          className="max-w-md mx-auto"
+        <AgentProgress
+          className="max-w-xl mx-auto"
           steps={[
-            'Reading your resume',
-            'Checking structure and formatting',
-            'Scoring each section',
-            'Drafting the recruiter verdict',
-            'Finding your quickest wins',
+            { label: 'Reading your resume', detail: ['Parsing sections and dates'] },
+            { label: 'Checking structure and formatting', detail: ['Scanning headings, bullets and length'] },
+            { label: 'Scoring each section', detail: ['Summary, experience, skills, education, projects'] },
+            { label: 'Drafting the recruiter verdict', detail: ['Weighing impact and clarity'] },
+            { label: 'Finding your quickest wins', detail: ['Ranking fixes by score impact'] },
           ]}
         />
       )}
@@ -381,7 +381,10 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
         <div className="space-y-4 fade-in">
           {/* ─── Hero: score + verdict in one glance ─────────────────────── */}
           <div className="bg-[#16181b] border border-white/7 rounded-xl p-5 flex flex-col sm:flex-row items-center gap-6">
-            <ScoreGauge score={safeResult.atsScore} size={168} className="shrink-0" />
+            <div className="h-[190px] w-[240px] shrink-0">
+              <Gauge value={Math.round(safeResult.atsScore)} centerValue={Math.round(safeResult.atsScore)} defaultLabel="ATS score" totalNotches={44}
+                useGradient={false} activeFill={scoreHex(safeResult.atsScore)} />
+            </div>
 
             <div className="flex-1 min-w-0 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-1.5 flex-wrap">
@@ -392,7 +395,20 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                 <p className="font-display text-lg text-slate-200 leading-snug">{safeResult.recruiterVerdict.headline}</p>
               )}
             </div>
-            {radarData.length >= 3 && <RadarChart data={radarData} size={200} className="hidden md:block shrink-0" />}
+            {radarData.length >= 3 && (
+              <div className="hidden md:block w-[250px] shrink-0">
+                <RadarChart
+                  size={250} margin={58}
+                  metrics={radarData.map(r => ({ key: r.label, label: r.label.charAt(0).toUpperCase() + r.label.slice(1) }))}
+                  data={[{ label: 'Sections', color: '#3cc9ae', values: Object.fromEntries(radarData.map(r => [r.label, r.value])) }]}
+                >
+                  <RadarGrid showLabels={false} />
+                  <RadarAxis />
+                  <RadarLabels fontSize={10} offset={10} />
+                  <RadarArea index={0} />
+                </RadarChart>
+              </div>
+            )}
           </div>
 
           {/* ─── Section breakdown — compact collapsible rows ────────────── */}

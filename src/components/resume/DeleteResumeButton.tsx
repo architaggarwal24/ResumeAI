@@ -1,53 +1,32 @@
 // src/components/resume/DeleteResumeButton.tsx
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Check } from 'lucide-react'
+import HoldButton from '@/components/vendor/react-bits/HoldButton'
 
-// Inline confirm that morphs in place with a draining timer (Arc "confirm morph").
-const CONFIRM_MS = 4000
-
+// Hold-to-delete (React Bits "Hold Button"): a destructive action that needs a
+// deliberate, visible gesture instead of a click.
 export function DeleteResumeButton({ resumeId }: { resumeId: string }) {
-  const router  = useRouter()
-  const [confirming, setConfirming] = useState(false)
-  const [loading, setLoading]       = useState(false)
-  const timer = useRef<number | undefined>(undefined)
-  useEffect(() => () => window.clearTimeout(timer.current), [])
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
 
-  function stop(e: React.SyntheticEvent) { e.preventDefault(); e.stopPropagation() }
-
-  function ask(e: React.MouseEvent) {
-    stop(e)
-    setConfirming(true)
-    window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setConfirming(false), CONFIRM_MS)
-  }
-  function cancel(e: React.MouseEvent) { stop(e); window.clearTimeout(timer.current); setConfirming(false) }
-  async function confirm(e: React.MouseEvent) {
-    stop(e)
-    window.clearTimeout(timer.current)
-    setLoading(true)
+  async function remove() {
+    setBusy(true)
     await fetch(`/api/resume/${resumeId}`, { method: 'DELETE' })
     router.refresh()
   }
 
-  if (!confirming) {
-    return (
-      <button onClick={ask} disabled={loading} aria-label="Delete resume"
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors">
-        <Trash2 size={11} />Delete
-      </button>
-    )
-  }
+  // The whole card is a link underneath — keep presses from navigating.
   return (
-    <div role="alertdialog" aria-label="Confirm delete" onClick={stop}
-      className="pop relative flex items-center overflow-hidden rounded-lg border border-red-500/30 bg-red-500/10 text-xs">
-      <span className="pl-2 pr-1 text-red-300">Delete?</span>
-      <button onClick={confirm} disabled={loading} className="px-2 py-1 font-semibold text-red-300 hover:bg-red-500/20 transition-colors">
-        {loading ? '…' : 'Yes'}
-      </button>
-      <button onClick={cancel} className="px-2 py-1 text-slate-400 hover:bg-white/5 transition-colors">No</button>
-      <span aria-hidden className="absolute bottom-0 left-0 h-0.5 bg-red-400/70" style={{ animation: `shrink ${CONFIRM_MS}ms linear forwards` }} />
+    <div onClick={e => { e.preventDefault(); e.stopPropagation() }}>
+      <HoldButton
+        size="sm" holdTime={1100} disabled={busy} onHold={remove}
+        backgroundColor="rgba(248,113,113,0.10)" fillColor="#ef4444" textColor="#fca5a5" fillTextColor="#ffffff"
+        icon={<Trash2 size={12} />} doneIcon={<Check size={12} />} doneLabel="Deleting…" glow={false}
+      >
+        Hold to delete
+      </HoldButton>
     </div>
   )
 }

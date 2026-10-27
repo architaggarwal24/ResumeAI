@@ -1,7 +1,7 @@
 // src/components/ui/viz/MiniRing.tsx
 'use client'
 import { useEffect, useState } from 'react'
-import { scoreHex } from './ScoreGauge'
+import { scoreHex } from '@/lib/score'
 
 // Small score ring for cards and lists (Kokonut "spending ring" idea).
 export function MiniRing({ score, size = 44, className }: { score: number; size?: number; className?: string }) {
