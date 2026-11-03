@@ -1,6 +1,7 @@
 // src/lib/supabase/middleware.ts
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { hasVerifiedFactor, needsSecondFactor } from '@/lib/security/mfa'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -39,16 +40,25 @@ export async function updateSession(request: NextRequest) {
 
   // Redirects must carry any session cookies refreshed by getUser() above,
   // otherwise a refreshed token is dropped and the user is logged out early.
-  const redirectTo = (pathname: string) => {
+  const redirectTo = (pathname: string, search = '') => {
     const url = request.nextUrl.clone()
     url.pathname = pathname
-    url.search = ''
+    url.search = search
     const res = NextResponse.redirect(url)
     supabaseResponse.cookies.getAll().forEach(c => res.cookies.set(c))
     return res
   }
 
   if (!user && isProtected) return redirectTo('/login')
+
+  // Two-factor: an enrolled user's password-only session goes to the code step.
+  if (user && isProtected && hasVerifiedFactor(user)) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (needsSecondFactor(user, session?.access_token)) {
+      const next = request.nextUrl.pathname + request.nextUrl.search
+      return redirectTo('/mfa', `?next=${encodeURIComponent(next)}`)
+    }
+  }
 
   // Redirect logged-in users away from auth pages
   const isAuthPage = request.nextUrl.pathname === '/login' ||

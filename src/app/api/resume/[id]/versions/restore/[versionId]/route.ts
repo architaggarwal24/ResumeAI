@@ -1,6 +1,6 @@
 // src/app/api/resume/[id]/versions/restore/[versionId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthedUser, unauthorized, limit, limiters, ownsResume, isUuid } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, ownsResume, isUuid } from '@/lib/security/guards'
 import { isLimitReached } from '@/lib/security/caps'
 
 type Params = { params: Promise<{ id: string; versionId: string }> }
@@ -36,7 +36,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const { id, versionId } = await params
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.write, user.id)
+    const limited = await limitUser(supabase, 'write', user.id)
     if (limited) return limited
     if (!isUuid(versionId) || !(await ownsResume(supabase, id, user.id))) return notFound('Resume')
 

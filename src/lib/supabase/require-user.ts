@@ -5,11 +5,13 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { isEmailVerified } from '@/lib/security/email-verified'
+import { sessionNeedsSecondFactor } from '@/lib/security/guards'
 
 export async function requireUser() {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) redirect('/login')
   if (!isEmailVerified(user)) redirect('/verify-email')
+  if (await sessionNeedsSecondFactor(supabase, user)) redirect('/mfa')
   return { supabase, user }
 }

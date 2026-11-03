@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { limit, limiters, parseBody, clientIp, MAX_BODY } from '@/lib/security/guards'
 import { sanitizeResumeData, isTemplateId } from '@/lib/security/resume-schema'
+import { logSecurityEvent } from '@/lib/security/security-log'
 
 type SharedResumeResult = {
   found: boolean
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
     if (!result?.found) return NextResponse.json({ error: 'Share not found' }, { status: 404 })
     if (result.expired) return NextResponse.json({ error: 'This link has expired' }, { status: 410 })
     if (result.locked) {
+      logSecurityEvent('share_unlock_failed', { slug, locked: true })
       return NextResponse.json({ error: 'Too many incorrect attempts. Try again in a few minutes.' }, { status: 429, headers: { 'Retry-After': '900' } })
     }
     if (!result.unlocked) return NextResponse.json({ error: 'Incorrect password' }, { status: 401 })

@@ -4,7 +4,7 @@ import { CHAT_EDIT_PROMPT } from '@/lib/llm/prompts'
 import { LLMError } from '@/lib/llm/client'
 import { streamLLMText, type ChatTurn } from '@/lib/llm/server'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, MAX_BODY } from '@/lib/security/guards'
 import type { ResumeData } from '@/types/resume'
 
 // 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
@@ -28,9 +28,9 @@ function buildChatResumeContext(data: ResumeData) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await getAuthedUser()
+    const { supabase, user } = await getAuthedUser()
     if (!user) return new Response('Unauthorized', { status: 401 })
-    const limited = limit(limiters.ai, user.id)
+    const limited = await limitUser(supabase, 'ai', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<{ messages?: unknown; resumeData?: unknown; creds?: unknown }>(request, MAX_BODY.ai)

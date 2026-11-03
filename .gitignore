@@ -1,7 +1,12 @@
 # .gitignore
 .env
-.env*.local
+.env*
+!.env.example
 .next/
 .vercel
 node_modules/
 *.tsbuildinfo
+
+# Local tooling and generated hand-offs (not source)
+.idea/
+Claude outputs/

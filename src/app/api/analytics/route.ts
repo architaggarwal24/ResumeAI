@@ -87,7 +87,7 @@ export async function GET() {
       resumes: summaries,
     } satisfies AnalyticsDashboard)
   } catch (err) {
-    console.error('[GET /api/analytics]', err)
+    console.error('[GET /api/analytics]', err instanceof Error ? err.name : (err as { code?: string } | null)?.code ?? 'unknown')
     return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 })
   }
 }

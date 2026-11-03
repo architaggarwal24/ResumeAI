@@ -6,6 +6,7 @@ import { useResumeStore, getStoredKey } from '@/store/resumeStore'
 import { PROVIDERS } from '@/lib/llm/client'
 import { TEMPLATES } from '@/lib/templates/render'
 import { Button, Card } from '@/components/ui/primitives'
+import { TwoFactorCard } from '@/components/settings/TwoFactorCard'
 import { cn } from '@/lib/utils'
 import {
   Settings, User, Layout, AlertTriangle, Check,
@@ -25,6 +26,7 @@ export default function SettingsPage() {
   const [saved, setSaved]                   = useState(false)
   const [deleteConfirm, setDeleteConfirm]   = useState('')
   const [deleting, setDeleting]             = useState(false)
+  const [deleteError, setDeleteError]       = useState('')
   const [loadingUser, setLoadingUser]       = useState(true)
 
   // Per-provider key state — synced from store after hydration
@@ -94,11 +96,27 @@ export default function SettingsPage() {
 
   async function deleteAllData() {
     if (deleteConfirm !== 'DELETE') return
-    setDeleting(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setDeleting(false); router.push('/login'); return }
-    await supabase.from('users').delete().eq('id', user.id)
-    await supabase.auth.signOut()
+    setDeleting(true); setDeleteError('')
+    try {
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: 'DELETE' }),
+      })
+      const data = await res.json().catch(() => ({})) as { deleted?: boolean; error?: string }
+      if (res.status === 401) { router.push('/login'); return }
+      // Only treat it as done when the server confirms the account is gone.
+      if (!res.ok || data.deleted !== true) {
+        setDeleteError(data.error || 'Account deletion failed — please try again.')
+        setDeleting(false)
+        return
+      }
+    } catch {
+      setDeleteError('Couldn’t reach the server — please check your connection and try again.')
+      setDeleting(false)
+      return
+    }
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
     router.push('/signup')
   }
 
@@ -134,6 +152,8 @@ export default function SettingsPage() {
             className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-sm text-slate-400 cursor-not-allowed"/>
         </div>
       </Card>
+
+      <TwoFactorCard />
 
       {/* AI Keys — full BYOK panel */}
       <Card className="mb-6">
@@ -313,6 +333,7 @@ export default function SettingsPage() {
                 <Trash2 size={12}/>Delete Everything
               </Button>
             </div>
+            {deleteError && <p role="alert" className="mt-2 text-xs text-red-300">{deleteError}</p>}
           </div>
         </div>
       </Card>

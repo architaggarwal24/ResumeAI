@@ -5,8 +5,9 @@ import { LLMError } from '@/lib/llm/client'
 import { validateCreds } from '@/lib/llm/validate'
 import { TAILOR_PROMPT } from '@/lib/llm/prompts'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
 import { isLimitReached } from '@/lib/security/caps'
+import { untrusted } from '@/lib/llm/untrusted'
 
 // 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.ai, user.id)
+    const limited = await limitUser(supabase, 'ai', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.ai)
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     const tailoredRaw = await callLLMServer<Record<string, unknown>>({
       creds: v.creds,
       systemPrompt: TAILOR_PROMPT,
-      userPrompt: `Job Description:\n${jobDescription}\n\nBase Resume:\n${JSON.stringify(sourceData, null, 2)}`,
+      userPrompt: `Job Description:\n${untrusted('job_post', jobDescription)}\n\nBase Resume:\n${JSON.stringify(sourceData, null, 2)}`,
     })
     // Model output is untrusted (a hostile job posting can steer it): normalise before storing.
     const tailored = sanitizeResumeData(tailoredRaw)

@@ -5,7 +5,7 @@ import { LLMError } from '@/lib/llm/client'
 import { callLLMServer, streamLLMText, type ChatTurn } from '@/lib/llm/server'
 import { validateCreds } from '@/lib/llm/validate'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, MAX_BODY } from '@/lib/security/guards'
 import type { BYOKCreds, MockInterviewDebrief } from '@/types/resume'
 
 // 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
@@ -16,9 +16,9 @@ const MAX_TURN_CHARS = 8000
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await getAuthedUser()
+    const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.ai, user.id)
+    const limited = await limitUser(supabase, 'ai', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<{

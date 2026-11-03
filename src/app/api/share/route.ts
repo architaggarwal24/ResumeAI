@@ -1,18 +1,14 @@
 // src/app/api/share/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { randomBytes } from 'crypto'
 import { getAuthedUser, unauthorized, limit, limiters, parseBody, ownsResume, isUuid, MAX_BODY } from '@/lib/security/guards'
-import { isLimitReached } from '@/lib/security/caps'
+import { mapCreateShareError } from '@/lib/security/db-errors'
+import { logSecurityEvent } from '@/lib/security/security-log'
 import { appOrigin } from '@/lib/security/app-origin'
 
 const MIN_SHARE_PASSWORD = 6
 const MAX_SHARE_PASSWORD = 128   // bcrypt only uses the first 72 bytes; cap well above that
 const MAX_EXPIRY_DAYS = 365
-const MAX_SHARES_PER_RESUME = 25
-
-function generateSlug(): string {
-  return randomBytes(9).toString('base64url') // 72 bits (was 48)
-}
+const MAX_SHARES_PER_RESUME = 25   // enforced in the database (004 trigger + create_share)
 
 // GET /api/share?resumeId=xxx — get existing shares for a resume
 export async function GET(request: NextRequest) {
@@ -66,11 +62,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
     }
 
-    const { count } = await supabase.from('resume_shares').select('id', { count: 'exact', head: true }).eq('resume_id', body.resumeId)
-    if ((count ?? 0) >= MAX_SHARES_PER_RESUME) {
-      return NextResponse.json({ error: `Share link limit reached (${MAX_SHARES_PER_RESUME}). Revoke old links first.` }, { status: 409 })
-    }
-
     // Password: optional, but if present it must be a real password.
     let password: string | null = null
     if (body.password !== undefined && body.password !== null && body.password !== '') {
@@ -91,36 +82,31 @@ export async function POST(request: NextRequest) {
       expiresAt = new Date(Date.now() + days * 86400 * 1000).toISOString()
     }
 
-    const slug = generateSlug()
-
-    // Bcrypt via Postgres pgcrypto (supabase/migrations/002_secure_share_access.sql).
-    let passwordHash: string | null = null
-    if (password) {
-      const { data: hash, error: hashError } = await supabase.rpc('hash_share_password', { p_password: password })
-      if (hashError || typeof hash !== 'string') {
-        console.error('[POST /api/share] hash_share_password failed:', hashError?.code)
-        return NextResponse.json({ error: 'Failed to create share' }, { status: 500 })
-      }
-      passwordHash = hash
+    // One database call does the ownership check, the per-user hourly throttle,
+    // the per-resume cap, slug generation and bcrypt hashing
+    // (supabase/migrations/005_security_remediation.sql). Clients can no longer
+    // call the hash function directly.
+    const { data: created, error } = await supabase.rpc('create_share', {
+      p_resume_id: body.resumeId, p_password: password, p_expires_at: expiresAt,
+    })
+    if (error || !created) {
+      const mapped = mapCreateShareError(error, MAX_SHARES_PER_RESUME)
+      if (mapped.status === 500) console.error('[POST /api/share] create_share failed:', error?.code ?? 'no data')
+      if (mapped.status === 429) logSecurityEvent('share_create_throttled', { userId: user.id })
+      return NextResponse.json(
+        { error: mapped.error },
+        { status: mapped.status, headers: mapped.retryAfterSec ? { 'Retry-After': String(mapped.retryAfterSec) } : undefined },
+      )
     }
-
-    const { data, error } = await supabase
-      .from('resume_shares')
-      .insert({ resume_id: body.resumeId, user_id: user.id, slug, password_hash: passwordHash, expires_at: expiresAt })
-      .select('id, slug, view_count, expires_at, created_at')
-      .single()
-
-    if (isLimitReached(error)) {
-      return NextResponse.json({ error: `Share link limit reached (${MAX_SHARES_PER_RESUME}). Revoke old links first.` }, { status: 409 })
-    }
-    if (error || !data) throw error ?? new Error('insert failed')
+    const data = created as { id: string; slug: string; view_count: number | null; expires_at: string | null; created_at: string; has_password: boolean }
+    const slug = data.slug
 
     // Same camelCase shape as GET, and never the password hash.
     const url = `${appOrigin(request.nextUrl.origin)}/s/${slug}`
     return NextResponse.json({
       share: {
         id: data.id, slug: data.slug, viewCount: data.view_count ?? 0,
-        expiresAt: data.expires_at, hasPassword: !!passwordHash, createdAt: data.created_at, url,
+        expiresAt: data.expires_at, hasPassword: data.has_password, createdAt: data.created_at, url,
       },
       url,
     }, { status: 201 })

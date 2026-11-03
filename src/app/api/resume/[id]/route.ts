@@ -1,7 +1,7 @@
 // src/app/api/resume/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeResumeData, isTemplateId } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -37,7 +37,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
     if (!isUuid(id)) return notFound()
-    const limited = limit(limiters.write, user.id)
+    const limited = await limitUser(supabase, 'write', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.resume)

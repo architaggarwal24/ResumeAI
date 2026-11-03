@@ -1,7 +1,7 @@
 // src/app/api/jobs/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { safeHttpUrl } from '@/lib/security/url'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, ownsResume, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, ownsResume, isUuid, MAX_BODY } from '@/lib/security/guards'
 import { isLimitReached } from '@/lib/security/caps'
 import type { JobStatus } from '@/types/resume'
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.write, user.id)
+    const limited = await limitUser(supabase, 'write', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.small)

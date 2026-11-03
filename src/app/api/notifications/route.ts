@@ -1,7 +1,7 @@
 // src/app/api/notifications/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { safeInternalHref } from '@/lib/security/url'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
 import type { NotificationType } from '@/types/resume'
 
 const TYPES: readonly NotificationType[] = ['score_ready', 'score_drop', 'score_improve', 'job_followup', 'resume_stale', 'share_viewed', 'system']
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.write, user.id)
+    const limited = await limitUser(supabase, 'write', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.small)

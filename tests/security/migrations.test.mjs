@@ -29,3 +29,33 @@ test('004 enforces every per-owner cap with a BEFORE INSERT trigger', () => {
   }
   assert.match(s, /pg_advisory_xact_lock/)
 })
+
+test('005 takes the bcrypt helper away from clients and adds create_share', () => {
+  const s = sql('005_security_remediation.sql')
+  assert.match(s, /REVOKE ALL ON FUNCTION public\.hash_share_password\(text\) FROM PUBLIC, anon, authenticated/)
+  assert.doesNotMatch(s, /GRANT EXECUTE ON FUNCTION public\.hash_share_password/)
+  const fn = s.slice(s.indexOf('FUNCTION public.create_share'), s.indexOf('REVOKE ALL ON FUNCTION public.create_share'))
+  // Throttle and cap checks both happen before any hashing.
+  const iThrottle = fn.indexOf("rate_limit_hit('share_create')"), iCap = fn.indexOf('limit_reached:resume_shares'), iHash = fn.indexOf('hash_share_password(')
+  assert.ok(iThrottle > 0 && iCap > iThrottle && iHash > iCap, 'throttle → cap → hash')
+  assert.match(fn, /user_id = v_uid/, 'ownership check')
+})
+
+test('005 functions revoke the Supabase default grants explicitly', () => {
+  const s = sql('005_security_remediation.sql')
+  for (const f of ['session_meets_mfa\\(\\)', 'rate_limit_hit\\(text\\)', 'create_share\\(uuid, text, timestamptz\\)', 'delete_my_account\\(\\)']) {
+    assert.match(s, new RegExp(`REVOKE ALL ON FUNCTION public\\.${f} FROM PUBLIC, anon, authenticated`), f)
+    assert.match(s, new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${f} TO authenticated;`), f)
+  }
+  assert.match(s, /SET search_path = public/)
+  assert.doesNotMatch(s, /SECURITY DEFINER\s*\n\s*AS/, 'every SECURITY DEFINER pins search_path')
+})
+
+test('005 deletes the login itself and enforces MFA on every user table', () => {
+  const s = sql('005_security_remediation.sql')
+  assert.match(s, /DELETE FROM auth\.users WHERE id = v_uid/)
+  for (const t of ['users', 'resumes', 'analyses', 'resume_versions', 'cover_letters', 'job_applications', 'resume_shares', 'notifications']) {
+    assert.match(s, new RegExp(`'${t}'`), t)
+  }
+  assert.match(s, /AS RESTRICTIVE FOR ALL TO authenticated/)
+})

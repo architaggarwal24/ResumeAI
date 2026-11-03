@@ -3,14 +3,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { buildResumePdf } from '@/lib/pdf/generate'
 import { texEscape } from '@/lib/templates/latex'
 import { sanitizeResumeData, isTemplateId } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, MAX_BODY } from '@/lib/security/guards'
 import type { ResumeData } from '@/types/resume'
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await getAuthedUser()
+    const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.export, user.id)
+    const limited = await limitUser(supabase, 'export', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<{ resumeData?: unknown; templateId?: unknown; format?: unknown }>(request, MAX_BODY.resume)

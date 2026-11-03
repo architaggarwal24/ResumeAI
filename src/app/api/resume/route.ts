@@ -1,7 +1,7 @@
 // src/app/api/resume/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeResumeData, isTemplateId } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, MAX_BODY } from '@/lib/security/guards'
 import { isLimitReached } from '@/lib/security/caps'
 
 const MAX_RAW_TEXT = 200_000
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   try {
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.write, user.id)
+    const limited = await limitUser(supabase, 'write', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.resume)

@@ -2,11 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateCreds } from '@/lib/llm/validate'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
 import { callLLMServer } from '@/lib/llm/server'
 import { LLMError } from '@/lib/llm/client'
 import { SCORE_CORE_PROMPT, SCORE_ENRICHMENT_PROMPT, SUGGEST_PROMPT, POINTER_SUGGEST_PROMPT, GENERATE_SECTION_PROMPT, IMPROVE_SECTION_PROMPT } from '@/lib/llm/prompts'
 import type { BYOKCreds, ResumeData, AnalysisResult, ATSResult, PointerSuggestionResult, GenerateSectionResult, GeneratableSection, SectionImproveResult } from '@/types/resume'
+import { untrusted } from '@/lib/llm/untrusted'
 
 // Vercel's default Serverless Function timeout (10s on Hobby) is well
 // under what a slow LLM provider or a chained multi-call analysis action
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
   try {
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.ai, user.id)
+    const limited = await limitUser(supabase, 'ai', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.ai)
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
         result.buzzwordsToRemove = asStringArray(enrichment.buzzwordsToRemove)
         result.trendingSkills    = asStringArray(enrichment.trendingSkills)
       } catch (enrichErr) {
-        console.error('[POST /api/analyze] Enrichment call failed (non-fatal):', enrichErr)
+        console.error('[POST /api/analyze] Enrichment call failed (non-fatal):', enrichErr instanceof Error ? enrichErr.name : 'unknown')
         // result already has safe empty-array defaults — analysis still succeeds
       }
 
@@ -211,7 +212,7 @@ export async function POST(request: NextRequest) {
       const result = await callLLMServer<ATSResult>({
         creds: body.creds,
         systemPrompt: SUGGEST_PROMPT,
-        userPrompt: `Job Description:\n${body.jobDescription}\n\nResume:\n${JSON.stringify(body.resumeData, null, 2)}`,
+        userPrompt: `Job Description:\n${untrusted('job_post', body.jobDescription)}\n\nResume:\n${JSON.stringify(body.resumeData, null, 2)}`,
         maxTokens: 3072,
       })
 
@@ -235,7 +236,7 @@ export async function POST(request: NextRequest) {
       }
 
       const jdBlock = body.jobDescription
-        ? `\n\nTarget job description (for keyword alignment):\n${body.jobDescription.slice(0, 800)}`
+        ? `\n\nTarget job description (for keyword alignment):\n${untrusted('job_post', body.jobDescription.slice(0, 800))}`
         : ''
 
       // Send only what's needed for one-line rewriting:
@@ -274,7 +275,7 @@ export async function POST(request: NextRequest) {
       }
 
       const jdBlock = body.jobDescription
-        ? `\n\nTarget job description (use for positioning/keywords):\n${body.jobDescription}`
+        ? `\n\nTarget job description (use for positioning/keywords):\n${untrusted('job_post', body.jobDescription)}`
         : ''
 
       const result = await callLLMServer<GenerateSectionResult>({
@@ -299,7 +300,7 @@ export async function POST(request: NextRequest) {
       }
 
       const jdBlock = body.jobDescription
-        ? `\n\nTarget job description (use for keyword alignment):\n${body.jobDescription}`
+        ? `\n\nTarget job description (use for keyword alignment):\n${untrusted('job_post', body.jobDescription)}`
         : ''
 
       const result = await callLLMServer<SectionImproveResult>({

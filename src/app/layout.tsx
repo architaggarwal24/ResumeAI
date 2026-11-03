@@ -5,6 +5,7 @@ import { StoreHydrator } from '@/components/ui/StoreHydrator'
 import { MotionProvider } from '@/components/ui/glass/MotionTier'
 import { fontSans, fontMono } from './fonts'
 import type { Metadata, Viewport } from 'next'
+import { connection } from 'next/server'
 
 const title = 'ResumeAI — Resume Intelligence Platform'
 const description = 'Upload your resume, get section-level scoring, inline editing, AI rewrites, ATS optimization, and template switching.'
@@ -24,7 +25,10 @@ export const viewport: Viewport = {
   colorScheme: 'dark',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Render per request so every page gets the CSP nonce from src/proxy.ts.
+  // Prerendered HTML would carry no nonce and its scripts would be blocked.
+  await connection()
   return (
     <html lang="en" className={`dark ${fontSans.variable} ${fontMono.variable}`} data-motion="lite">
       <body className="bg-ink font-sans text-slate-100 antialiased">

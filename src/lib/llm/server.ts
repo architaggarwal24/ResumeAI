@@ -10,7 +10,9 @@
 import { LLMError } from './client'
 import { validateCreds, type ValidCreds } from './validate'
 import { extractJsonObject } from './parse'
+import { withTimeout, STREAM_TIMEOUT_MS } from './timeouts'
 import type { LLMOptions } from '@/types/resume'
+import { UNTRUSTED_DATA_RULE } from './untrusted'
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const GEMINI_MODELS = 'https://generativelanguage.googleapis.com/v1beta/models/'
@@ -107,7 +109,7 @@ export async function runLLM(input: {
   const temperature = reasoning ? 0 : clampNumber(input.temperature, 0, 1.5, 0)
 
   const noThinkPrefix = creds.provider === 'nvidia' ? '/no_think\n' : ''
-  const strictSystem = `${noThinkPrefix}IMPORTANT: Return ONLY valid JSON. No explanations, no markdown fences, no <think> tags, no preamble. Start your response with { and end with }.\n\n${input.systemPrompt}`
+  const strictSystem = `${noThinkPrefix}IMPORTANT: Return ONLY valid JSON. No explanations, no markdown fences, no <think> tags, no preamble. Start your response with { and end with }.\n\n${input.systemPrompt}\n\n${UNTRUSTED_DATA_RULE}`
   const signal = timeoutSignal(input.signal)
 
   try {
@@ -201,7 +203,7 @@ export async function runLLM(input: {
       return { ok: false, status: 408, error: 'Request timed out — the model took too long. Try a faster model (nvidia/nemotron-3-nano-30b-a3b, google/gemma-4-31b-it).' }
     }
     if (name === 'AbortError') return { ok: false, status: 499, error: 'Cancelled' }
-    console.error('[runLLM] unhandled:', name, err instanceof Error ? err.message.slice(0, 200) : '')
+    console.error('[runLLM] unhandled:', name || 'unknown')
     return { ok: false, status: 502, error: 'Could not reach the model provider' }
   }
 }
@@ -293,8 +295,10 @@ export async function streamLLMText(input: {
   const validated = validateCreds(input.creds)
   if (!validated.ok) throw new LLMError(validated.error, 'unknown', 'anthropic')
   const creds = validated.creds
+  const system = `${input.system}\n\n${UNTRUSTED_DATA_RULE}`
   const maxTokens = Math.round(clampNumber(input.maxTokens, 64, 4096, 1536))
-  const common = { redirect: 'error' as const, signal: input.signal }
+  // Server-side deadline on top of the client's abort signal (B10).
+  const common = { redirect: 'error' as const, signal: withTimeout(input.signal, STREAM_TIMEOUT_MS) }
 
   if (creds.provider === 'anthropic') {
     const res = await fetch(ANTHROPIC_URL, {
@@ -309,8 +313,8 @@ export async function streamLLMText(input: {
       body: JSON.stringify({
         model: creds.model, max_tokens: maxTokens, stream: true,
         system: input.cacheSystem
-          ? [{ type: 'text', text: input.system, cache_control: { type: 'ephemeral' } }]
-          : input.system,
+          ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
+          : system,
         messages: input.messages,
       }),
       ...common,
@@ -328,7 +332,7 @@ export async function streamLLMText(input: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': creds.apiKey },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: input.system }] },
+        systemInstruction: { parts: [{ text: system }] },
         contents: input.messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
         generationConfig: { maxOutputTokens: maxTokens },
       }),
@@ -349,7 +353,7 @@ export async function streamLLMText(input: {
     headers: openAiCompatHeaders(creds),
     body: JSON.stringify({
       model: creds.model, stream: true, max_tokens: maxTokens,
-      messages: [{ role: 'system', content: input.system }, ...input.messages],
+      messages: [{ role: 'system', content: system }, ...input.messages],
     }),
     ...common,
   })

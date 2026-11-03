@@ -5,8 +5,9 @@ import { LLMError } from '@/lib/llm/client'
 import { validateCreds } from '@/lib/llm/validate'
 import { INTERVIEW_PREP_PROMPT } from '@/lib/llm/prompts'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
 import type { InterviewPrepResult } from '@/types/resume'
+import { untrusted } from '@/lib/llm/untrusted'
 
 // 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.ai, user.id)
+    const limited = await limitUser(supabase, 'ai', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.ai)
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     const result = await callLLMServer<InterviewPrepResult>({
       creds: v.creds,
       systemPrompt: INTERVIEW_PREP_PROMPT,
-      userPrompt: `Company: ${company || 'Unknown'}\nRole: ${role || 'Unknown'}\n\nJob Description:\n${raw.jobDescription.slice(0, 20_000)}\n\nResume:\n${JSON.stringify(resumeData, null, 2)}`,
+      userPrompt: `Company: ${company || 'Unknown'}\nRole: ${role || 'Unknown'}\n\nJob Description:\n${untrusted('job_post', raw.jobDescription.slice(0, 20_000))}\n\nResume:\n${JSON.stringify(resumeData, null, 2)}`,
     })
 
     if (!Array.isArray(result.questions)) {

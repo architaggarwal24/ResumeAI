@@ -5,8 +5,9 @@ import { LLMError } from '@/lib/llm/client'
 import { validateCreds } from '@/lib/llm/validate'
 import { COVER_LETTER_PROMPT } from '@/lib/llm/prompts'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
 import type { CoverLetterTone } from '@/types/resume'
+import { untrusted } from '@/lib/llm/untrusted'
 
 // 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.ai, user.id)
+    const limited = await limitUser(supabase, 'ai', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.ai)
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     const result = await callLLMServer<{ content: string; subjectLine: string }>({
       creds: v.creds,
       systemPrompt: COVER_LETTER_PROMPT,
-      userPrompt: `${TONE_INSTRUCTIONS[tone]}\n\nResume:\n${JSON.stringify(resumeData, null, 2)}\n\nJob Description:\n${jobDescription}\n\nWrite the cover letter now.`,
+      userPrompt: `${TONE_INSTRUCTIONS[tone]}\n\nResume:\n${JSON.stringify(resumeData, null, 2)}\n\nJob Description:\n${untrusted('job_post', jobDescription)}\n\nWrite the cover letter now.`,
     })
     if (typeof result.content !== 'string' || !result.content.trim()) {
       return NextResponse.json({ error: 'Model returned an empty cover letter — try again' }, { status: 422 })

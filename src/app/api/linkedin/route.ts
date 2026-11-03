@@ -5,7 +5,8 @@ import { LLMError } from '@/lib/llm/client'
 import { validateCreds } from '@/lib/llm/validate'
 import { LINKEDIN_PARSE_PROMPT } from '@/lib/llm/prompts'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, MAX_BODY } from '@/lib/security/guards'
+import { untrusted } from '@/lib/llm/untrusted'
 
 // 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
@@ -55,9 +56,9 @@ async function readTextLimited(res: Response, max: number): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await getAuthedUser()
+    const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.ai, user.id)
+    const limited = await limitUser(supabase, 'ai', user.id)
     if (limited) return limited
 
     const parsed = await parseBody<Record<string, unknown>>(request, MAX_BODY.small * 4)
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       const out = await callLLMServer<Record<string, unknown>>({
         creds: v.creds,
         systemPrompt: LINKEDIN_PARSE_PROMPT,
-        userPrompt: `LinkedIn profile text (manually pasted):\n\n${rawText}`,
+        userPrompt: `LinkedIn profile text (manually pasted):\n\n${untrusted('profile_text', rawText)}`,
       })
       const resumeData = sanitizeResumeData(out)
       if (!resumeData) return NextResponse.json({ error: 'Model returned an unusable resume' }, { status: 422 })
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
     const out = await callLLMServer<Record<string, unknown>>({
       creds: v.creds,
       systemPrompt: LINKEDIN_PARSE_PROMPT,
-      userPrompt: `LinkedIn profile URL: ${profileUrl}\n\nExtracted text:\n${rawText}`,
+      userPrompt: `LinkedIn profile URL: ${profileUrl}\n\nExtracted text:\n${untrusted('web_page', rawText)}`,
     })
     const resumeData = sanitizeResumeData(out)
     if (!resumeData) return NextResponse.json({ error: 'Model returned an unusable resume' }, { status: 422 })

@@ -1,7 +1,7 @@
 // src/app/api/resume/[id]/versions/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, ownsResume, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, ownsResume, MAX_BODY } from '@/lib/security/guards'
 import { isLimitReached } from '@/lib/security/caps'
 
 type Params = { params: Promise<{ id: string }> }
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const { id } = await params
     const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.write, user.id)
+    const limited = await limitUser(supabase, 'write', user.id)
     if (limited) return limited
 
     // Ownership is verified up front (RLS also enforces it) — not only on the

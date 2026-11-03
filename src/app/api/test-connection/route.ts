@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runLLM } from '@/lib/llm/server'
 import { validateCreds, type ValidCreds } from '@/lib/llm/validate'
-import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
+import { getAuthedUser, unauthorized, limitUser, parseBody, MAX_BODY } from '@/lib/security/guards'
 
 // 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
@@ -110,9 +110,9 @@ async function checkJsonCapability(creds: ValidCreds): Promise<CheckResult> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await getAuthedUser()
+    const { supabase, user } = await getAuthedUser()
     if (!user) return unauthorized()
-    const limited = limit(limiters.testConn, user.id)
+    const limited = await limitUser(supabase, 'testConn', user.id)
     if (limited) return limited
 
     const parsed = await parseBody(request, MAX_BODY.small)
