@@ -34,14 +34,20 @@ const TABS: { id: ResumeTab; title: string; icon: LucideIcon }[] = [
 interface Props { resume: ResumeRow; initialAnalysis: AnalysisResult | null }
 
 export function ResumeShell({ resume, initialAnalysis }: Props) {
-  const { activeTab, setActiveTab, setResumeData, setResumeId, setSelectedTemplate, setAnalysisResult } = useResumeStore()
+  const { activeTab, setActiveTab, setResumeData, setResumeId, setSelectedTemplate, setAnalysisResult, setATSResult, setCoverLetter } = useResumeStore()
+  const liveScore = useResumeStore(s => s.resumeId === resume.id ? s.analysisResult?.atsScore : undefined)
   const railRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setResumeId(resume.id)
     setResumeData(resume.parsed_data)
     setSelectedTemplate(resume.template_id ?? 'classic')
-    if (initialAnalysis) setAnalysisResult(initialAnalysis)
+    // Always replace per-resume results: otherwise opening resume B right after
+    // resume A showed A's score, ATS result and cover letter (and skipped B's
+    // auto-score because a result already appeared to exist).
+    setAnalysisResult(initialAnalysis ?? null)
+    setATSResult(null)
+    setCoverLetter(null)
   }, [resume.id]) // eslint-disable-line
 
   // Keep the active tab visible in the scrollable rail.
@@ -56,7 +62,8 @@ export function ResumeShell({ resume, initialAnalysis }: Props) {
     if (e.key === 'ArrowLeft')  { e.preventDefault(); setActiveTab(TABS[(i - 1 + TABS.length) % TABS.length].id) }
   }
 
-  const score = resume.ats_score
+  // The server prop is the score at page load; prefer the live one after a re-analysis.
+  const score = typeof liveScore === 'number' ? liveScore : resume.ats_score
 
   return (
     <div className="flex h-full flex-col">

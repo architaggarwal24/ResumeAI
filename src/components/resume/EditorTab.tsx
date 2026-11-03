@@ -20,6 +20,9 @@ interface EditableFieldShared {
   onRequestRewrite: (id: string, text: string, context: string) => void
   onAcceptRewrite: (id: string, applyFn: (val: string) => void) => void
   onDismissRewrite: (id: string) => void
+  /** Commit functions of fields currently open for editing, so "Save All" can
+   *  include text the user typed but didn't confirm with the field's own Save. */
+  pendingEdits: Map<string, () => void>
 }
 
 // Hoisted to module scope — defining this inside EditorTab's render body would
@@ -44,6 +47,18 @@ function EditableField({
     setDirty(p => new Set(p).add(id))
     setEditing(false)
   }
+
+  // While open, register a commit function holding the latest text.
+  const { pendingEdits } = shared
+  useEffect(() => {
+    if (!editing) return
+    pendingEdits.set(id, () => {
+      onSave(local)
+      setDirty(p => new Set(p).add(id))
+      setEditing(false)
+    })
+    return () => { pendingEdits.delete(id) }
+  }, [editing, local, id, pendingEdits, onSave, setDirty])
 
   return (
     <div>
@@ -121,6 +136,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
     resumeData, updateResumeField, byokCreds, loading, setLoading, addToast,
     undo, redo, undoPast, undoFuture, selectedTemplate,
   } = useResumeStore()
+  const [pendingEdits] = useState(() => new Map<string, () => void>())
   const [rewrites, setRewrites]     = useState<Rewrites>({})
   const [saving, setSaving]         = useState(false)
   const [dirtyFields, setDirty]     = useState<Set<string>>(new Set())
@@ -173,6 +189,10 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
 
   // ── Save to DB ─────────────────────────────────────────────────────────────
   async function saveToDb() {
+    // Commit any field still open for editing — previously its text was
+    // silently dropped if the user clicked Save All without the field's Save.
+    for (const commit of [...pendingEdits.values()]) commit()
+    const resumeData = useResumeStore.getState().resumeData
     // Auto-snapshot before saving so history is always up to date
     if (resumeData) {
       fetch(`/api/resume/${resumeId}/versions`, {
@@ -235,6 +255,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
   const editableShared: EditableFieldShared = {
     rewrites, rewritingId: loading.rewriting, dirtyFields, setDirty,
     onRequestRewrite: requestRewrite, onAcceptRewrite: acceptRewrite, onDismissRewrite: dismissRewrite,
+    pendingEdits,
   }
 
   return (

@@ -21,7 +21,7 @@ function esc(str?: string | null): string {
 
 function bullets(items: Array<{ text: string }> | undefined): string {
   if (!items?.length) return ''
-  return `<ul style="margin:4px 0 0 0;padding-left:18px">${items.map(b => `<li style="margin-bottom:3px">${esc(b.text)}</li>`).join('')}</ul>`
+  return `<ul style="margin:4px 0 0 0;padding-left:18px;list-style:disc">${items.map(b => `<li style="margin-bottom:3px">${esc(b.text)}</li>`).join('')}</ul>`
 }
 
 // Renderers interpolate fields into HTML strings that are injected with

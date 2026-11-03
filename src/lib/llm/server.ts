@@ -13,6 +13,7 @@ import { extractJsonObject } from './parse'
 import { withTimeout, STREAM_TIMEOUT_MS } from './timeouts'
 import type { LLMOptions } from '@/types/resume'
 import { UNTRUSTED_DATA_RULE } from './untrusted'
+import { localLlmEnabled, localBaseUrl, llmTimeoutMs, LOCAL_DISABLED_MESSAGE } from './local'
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const GEMINI_MODELS = 'https://generativelanguage.googleapis.com/v1beta/models/'
@@ -22,7 +23,30 @@ const OPENAI_COMPAT_URLS: Record<string, string> = {
   nvidia:     'https://integrate.api.nvidia.com/v1/chat/completions',
 }
 
-const REQUEST_TIMEOUT_MS = 60_000
+/** Chat-completions URL for the OpenAI-compatible providers (incl. local). */
+function chatUrl(provider: string): string | null {
+  if (provider === 'local') {
+    const base = localBaseUrl()
+    return base ? `${base}/chat/completions` : null
+  }
+  return OPENAI_COMPAT_URLS[provider] ?? null
+}
+
+/**
+ * One line per failed model call in the server terminal / platform logs. The
+ * provider's own message is included (it explains 4xx/5xx answers like
+ * NVIDIA's 410); prompts, outputs and keys never are.
+ */
+function logLlmFailure(where: string, creds: { provider: string; model: string }, status: number | string, ms: number, message?: string) {
+  const msg = (message ?? '').replace(/\s+/g, ' ')
+    // Providers sometimes echo (part of) the key in auth errors — mask it.
+    .replace(/\b(sk-ant-|sk-or-|sk-|nvapi-|AIza)[A-Za-z0-9_*.-]{4,}/g, '$1****')
+    .slice(0, 300)
+  console.error(`[llm] ${where} failed provider=${creds.provider} model=${creds.model} status=${status} after=${ms}ms${msg ? ` — ${msg}` : ''}`)
+}
+function logLlmOk(where: string, creds: { provider: string; model: string }, ms: number, extra = '') {
+  if (process.env.LLM_DEBUG === '1') console.info(`[llm] ${where} ok provider=${creds.provider} model=${creds.model} after=${ms}ms${extra}`)
+}
 const MAX_PROMPT_CHARS = 250_000
 const MAX_OUTPUT_TOKENS = 8192
 
@@ -41,9 +65,19 @@ function clampNumber(v: unknown, min: number, max: number, fallback: number): nu
   return Math.min(max, Math.max(min, n))
 }
 
-function timeoutSignal(external?: AbortSignal): AbortSignal {
-  const t = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+function timeoutSignal(provider: string, external?: AbortSignal): AbortSignal {
+  const t = AbortSignal.timeout(llmTimeoutMs(provider))
   return external ? AbortSignal.any([t, external]) : t
+}
+
+const PROVIDER_NAMES: Record<string, string> = { anthropic: 'Anthropic', openai: 'OpenAI', gemini: 'Gemini', openrouter: 'OpenRouter', nvidia: 'NVIDIA NIM', local: 'your local model server' }
+
+/** 404 = unknown model id; 410 = the provider retired it (NVIDIA does this). */
+function modelUnavailable(provider: string, model: string, status: number): string {
+  const name = PROVIDER_NAMES[provider] ?? provider
+  return status === 410
+    ? `${name} has retired the model "${model}" (HTTP 410). Pick another model under Manage keys.`
+    : `Model "${model}" wasn't found on ${name}. Check the model ID under Manage keys.`
 }
 
 function shortProviderMessage(s: unknown, fallback: string): string {
@@ -57,10 +91,14 @@ function geminiEndpoint(model: string): string {
 }
 
 function openAiCompatHeaders(creds: ValidCreds): Record<string, string> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${creds.apiKey}`,
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (creds.provider === 'local') {
+    // The browser sends a placeholder; a real key, if the local server wants
+    // one, comes from server env.
+    if (process.env.LOCAL_LLM_API_KEY) headers['Authorization'] = `Bearer ${process.env.LOCAL_LLM_API_KEY}`
+    return headers
   }
+  headers['Authorization'] = `Bearer ${creds.apiKey}`
   if (creds.provider === 'openrouter') {
     headers['HTTP-Referer'] = 'https://resumeai.app'
     headers['X-Title'] = 'ResumeAI'
@@ -110,11 +148,19 @@ export async function runLLM(input: {
 
   const noThinkPrefix = creds.provider === 'nvidia' ? '/no_think\n' : ''
   const strictSystem = `${noThinkPrefix}IMPORTANT: Return ONLY valid JSON. No explanations, no markdown fences, no <think> tags, no preamble. Start your response with { and end with }.\n\n${input.systemPrompt}\n\n${UNTRUSTED_DATA_RULE}`
-  const signal = timeoutSignal(input.signal)
+  const signal = timeoutSignal(creds.provider, input.signal)
+  const started = Date.now()
+  if (creds.provider === 'local' && !localLlmEnabled()) return { ok: false, status: 403, error: LOCAL_DISABLED_MESSAGE }
 
-  try {
+  // Raw provider error text of the last failed call — for the server log only.
+  let lastProviderDetail = ''
+
+  // One provider call with a given output budget. Returns the raw reply and
+  // whether the provider stopped because the budget ran out.
+  const callOnce = async (budget: number): Promise<{ rawText: string; truncated: boolean } | RunLLMResult> => {
+    const maxTokens = budget
     let rawText = ''
-
+    let truncated = false
     if (creds.provider === 'anthropic') {
       const res = await fetch(ANTHROPIC_URL, {
         method: 'POST',
@@ -125,11 +171,14 @@ export async function runLLM(input: {
       })
       if (!res.ok) {
         const e = await res.json().catch(() => ({})) as { error?: { message?: string } }
+        lastProviderDetail = e?.error?.message ?? ''
         if (res.status === 401 || res.status === 403) return { ok: false, status: 401, error: 'Invalid API key' }
+        if (res.status === 404 || res.status === 410) return { ok: false, status: res.status, error: modelUnavailable(creds.provider, creds.model, res.status) }
         return { ok: false, status: res.status, error: shortProviderMessage(e?.error?.message, `Anthropic ${res.status}`) }
       }
-      const d = await res.json() as { content?: Array<{ text?: string }> }
+      const d = await res.json() as { content?: Array<{ text?: string }>; stop_reason?: string }
       rawText = d.content?.[0]?.text || ''
+      truncated = d.stop_reason === 'max_tokens'
 
     } else if (creds.provider === 'gemini') {
       const res = await fetch(geminiEndpoint(creds.model), {
@@ -145,15 +194,20 @@ export async function runLLM(input: {
       })
       if (!res.ok) {
         const e = await res.json().catch(() => ({})) as { error?: { message?: string } }
+        lastProviderDetail = e?.error?.message ?? ''
         if (res.status === 401 || res.status === 403) return { ok: false, status: 401, error: 'Invalid API key' }
+        if (res.status === 404 || res.status === 410) return { ok: false, status: res.status, error: modelUnavailable(creds.provider, creds.model, res.status) }
         return { ok: false, status: res.status, error: shortProviderMessage(e?.error?.message, `Gemini ${res.status}`) }
       }
-      const d = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
+      const d = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }> }
       rawText = d.candidates?.[0]?.content?.parts?.[0]?.text || ''
+      truncated = d.candidates?.[0]?.finishReason === 'MAX_TOKENS'
 
     } else {
       // OpenAI / OpenRouter / NVIDIA (OpenAI-compatible)
-      const res = await fetch(OPENAI_COMPAT_URLS[creds.provider], {
+      const url = chatUrl(creds.provider)
+      if (!url) return { ok: false, status: 500, error: 'LOCAL_LLM_BASE_URL is not a valid http(s) URL' }
+      const res = await fetch(url, {
         method: 'POST',
         headers: openAiCompatHeaders(creds),
         body: JSON.stringify({
@@ -167,40 +221,76 @@ export async function runLLM(input: {
         signal,
       })
       if (!res.ok) {
-        const e = await res.json().catch(() => ({})) as { error?: { message?: string } | string }
-        const rawMsg = typeof e?.error === 'string' ? e.error : e?.error?.message
+        const e = await res.json().catch(() => ({})) as { error?: { message?: string } | string; detail?: unknown }
+        // NVIDIA puts its reason in `detail`; OpenAI/OpenRouter in `error`.
+        const rawMsg = typeof e?.error === 'string' ? e.error : e?.error?.message ?? (typeof e?.detail === 'string' ? e.detail : undefined)
+        lastProviderDetail = rawMsg ?? ''
         if (res.status === 401 || res.status === 403) return { ok: false, status: 401, error: 'Invalid API key' }
         if (res.status === 402) return { ok: false, status: 402, error: 'Insufficient credits' }
         if (res.status === 429) return { ok: false, status: 429, error: 'Rate limit — wait a moment' }
-        if (res.status === 404) return { ok: false, status: 404, error: `Model "${creds.model}" not found` }
-        return { ok: false, status: res.status, error: shortProviderMessage(rawMsg, `${creds.provider} ${res.status}`) }
+        if (res.status === 404 || res.status === 410) return { ok: false, status: res.status, error: modelUnavailable(creds.provider, creds.model, res.status) }
+        return { ok: false, status: res.status, error: shortProviderMessage(rawMsg, `${PROVIDER_NAMES[creds.provider] ?? creds.provider} returned an error (HTTP ${res.status}). Try again, or pick another model.`) }
       }
-      rawText = extractOpenAiContent(await res.json() as Record<string, unknown>)
+      const d = await res.json() as Record<string, unknown>
+      rawText = extractOpenAiContent(d)
+      truncated = (d.choices as Array<{ finish_reason?: string }> | undefined)?.[0]?.finish_reason === 'length'
+    }
+    return { rawText, truncated }
+  }
+
+  try {
+    let reply = await callOnce(maxTokens)
+    if ('ok' in reply) {
+      if (!reply.ok) logLlmFailure('runLLM', creds, reply.status, Date.now() - started, lastProviderDetail ? `provider said: ${lastProviderDetail}` : reply.error)
+      return reply
+    }
+    let parsed = extractJsonObject(reply.rawText)
+
+    // The model ran out of output tokens (reasoning models often spend most of
+    // the budget thinking). Retry once with double the budget before giving up
+    // or settling for a repaired, cut-off answer.
+    if (reply.truncated && (!parsed.ok || parsed.truncated) && maxTokens < MAX_OUTPUT_TOKENS) {
+      const retry = await callOnce(Math.min(MAX_OUTPUT_TOKENS, maxTokens * 2))
+      if (!('ok' in retry)) {
+        const p2 = extractJsonObject(retry.rawText)
+        if (p2.ok || !parsed.ok) { reply = retry; parsed = p2 }
+      } else if (!parsed.ok) {
+        if (!retry.ok) logLlmFailure('runLLM retry', creds, retry.status, Date.now() - started, retry.error)
+        return retry
+      }
     }
 
-    const parsed = extractJsonObject(rawText)
+    const rawText = reply.rawText
     if (!parsed.ok) {
       // Log shape only — never the model output, which echoes the user's resume (PII).
-      console.error(`[runLLM] unusable output provider=${creds.provider} model=${creds.model} reason=${parsed.reason} chars=${rawText.length}`)
+      console.error(`[runLLM] unusable output provider=${creds.provider} model=${creds.model} reason=${parsed.reason} truncated=${reply.truncated} chars=${rawText.length}`)
+      if (reply.truncated) {
+        return { ok: false, status: 422, error: 'The model ran out of output tokens before finishing its answer' + (reasoning ? ' (reasoning models spend most of them thinking)' : '') + '. Try again, or pick a faster non-reasoning model.' }
+      }
       if (parsed.reason === 'empty') {
         return { ok: false, status: 422, error: 'Model returned an empty response. Try re-running, or switch to a different model.' }
       }
       if (parsed.reason === 'invalid') {
-        return { ok: false, status: 422, error: 'Could not parse model response as JSON. Try nvidia/nemotron-3-nano-30b-a3b or gemini-3.8-flash.' }
+        return { ok: false, status: 422, error: 'The model’s reply wasn’t valid JSON, even after automatic repair. Try again, or switch to a different model.' }
       }
       return {
         ok: false, status: 422,
         error: 'Model did not return valid JSON. ' + (reasoning
-          ? 'This is a reasoning model — try switching to a non-reasoning model like nvidia/nemotron-3-nano-30b-a3b, google/gemma-4-31b-it, or stepfun-ai/step-3.7-flash.'
-          : 'Try nvidia/nemotron-3-nano-30b-a3b or gemini-3.8-flash.'),
+          ? 'This is a reasoning model — try a smaller, non-reasoning model from the list.'
+          : 'Try again, or switch to a different model.'),
       }
+    }
+    logLlmOk('runLLM', creds, Date.now() - started, parsed.repaired ? ' (repaired output)' : '')
+    if (parsed.repaired) {
+      console.warn(`[runLLM] repaired model output provider=${creds.provider} model=${creds.model} truncated=${!!parsed.truncated}`)
     }
     return { ok: true, result: parsed.value }
 
   } catch (err: unknown) {
     const name = err instanceof Error ? err.name : ''
+    if (name !== 'AbortError') logLlmFailure('runLLM', creds, name || 'error', Date.now() - started, name === 'TimeoutError' ? `no answer within ${llmTimeoutMs(creds.provider) / 1000}s` : err instanceof Error ? err.message : '')
     if (name === 'TimeoutError') {
-      return { ok: false, status: 408, error: 'Request timed out — the model took too long. Try a faster model (nvidia/nemotron-3-nano-30b-a3b, google/gemma-4-31b-it).' }
+      return { ok: false, status: 408, error: `The model didn't answer within ${llmTimeoutMs(creds.provider) / 1000}s. Try again, pick a smaller model${creds.provider === 'local' ? '' : ', or run a local model'}. (Server limit: LLM_TIMEOUT_MS)` }
     }
     if (name === 'AbortError') return { ok: false, status: 499, error: 'Cancelled' }
     console.error('[runLLM] unhandled:', name || 'unknown')
@@ -298,7 +388,15 @@ export async function streamLLMText(input: {
   const system = `${input.system}\n\n${UNTRUSTED_DATA_RULE}`
   const maxTokens = Math.round(clampNumber(input.maxTokens, 64, 4096, 1536))
   // Server-side deadline on top of the client's abort signal (B10).
-  const common = { redirect: 'error' as const, signal: withTimeout(input.signal, STREAM_TIMEOUT_MS) }
+  if (creds.provider === 'local' && !localLlmEnabled()) throw new LLMError(LOCAL_DISABLED_MESSAGE, 'unknown', creds.provider)
+  const streamTimeout = creds.provider === 'local' ? llmTimeoutMs('local') : STREAM_TIMEOUT_MS
+  const common = { redirect: 'error' as const, signal: withTimeout(input.signal, streamTimeout) }
+  const started = Date.now()
+  // Explicitly typed so TypeScript narrows after a call (it returns never).
+  const fail: (status: number, message: string, code: 'auth' | 'rate_limit' | 'unknown', providerText?: string) => never = (status, message, code, providerText) => {
+    logLlmFailure('stream', creds, status, Date.now() - started, providerText || message)
+    throw new LLMError(message, code, creds.provider)
+  }
 
   if (creds.provider === 'anthropic') {
     const res = await fetch(ANTHROPIC_URL, {
@@ -321,7 +419,7 @@ export async function streamLLMText(input: {
     })
     if (!res.ok || !res.body) {
       const code = res.status === 401 || res.status === 403 ? 'auth' : res.status === 429 ? 'rate_limit' : 'unknown'
-      throw new LLMError(code === 'auth' ? 'Invalid API key' : `Provider error ${res.status}`, code, creds.provider)
+      fail(res.status, code === 'auth' ? 'Invalid API key' : (res.status === 404 || res.status === 410) ? modelUnavailable(creds.provider, creds.model, res.status) : `Provider error ${res.status}`, code, await res.text().catch(() => ''))
     }
     return sseToTextStream('anthropic', res.body)
   }
@@ -340,7 +438,7 @@ export async function streamLLMText(input: {
     })
     if (!res.ok) {
       const code = res.status === 400 || res.status === 401 || res.status === 403 ? 'auth' : res.status === 429 ? 'rate_limit' : 'unknown'
-      throw new LLMError(code === 'auth' ? 'Invalid API key or model' : `Provider error ${res.status}`, code, creds.provider)
+      fail(res.status, code === 'auth' ? 'Invalid API key or model' : (res.status === 404 || res.status === 410) ? modelUnavailable(creds.provider, creds.model, res.status) : `Provider error ${res.status}`, code, await res.text().catch(() => ''))
     }
     const d = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
     const text = d.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
@@ -348,7 +446,9 @@ export async function streamLLMText(input: {
     return new ReadableStream({ start(c) { c.enqueue(bytes); c.close() } })
   }
 
-  const res = await fetch(OPENAI_COMPAT_URLS[creds.provider], {
+  const url = chatUrl(creds.provider)
+  if (!url) throw new LLMError('LOCAL_LLM_BASE_URL is not a valid http(s) URL', 'unknown', creds.provider)
+  const res = await fetch(url, {
     method: 'POST',
     headers: openAiCompatHeaders(creds),
     body: JSON.stringify({
@@ -359,7 +459,7 @@ export async function streamLLMText(input: {
   })
   if (!res.ok || !res.body) {
     const code = res.status === 401 || res.status === 403 ? 'auth' : res.status === 429 ? 'rate_limit' : 'unknown'
-    throw new LLMError(code === 'auth' ? 'Invalid API key' : `Provider error ${res.status}`, code, creds.provider)
+    fail(res.status, code === 'auth' ? 'Invalid API key' : (res.status === 404 || res.status === 410) ? modelUnavailable(creds.provider, creds.model, res.status) : `Provider error ${res.status}`, code, await res.text().catch(() => ''))
   }
   return sseToTextStream(creds.provider, res.body)
 }

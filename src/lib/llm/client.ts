@@ -9,7 +9,12 @@ export const PROVIDERS: Record<LLMProvider, {
   hint: string
   models: string[]
   defaultModel: string
+  /** Model used for quick extraction tasks; '' = always use the chosen model. */
   fastModel: string
+  /** Hidden from the provider pickers when false. */
+  enabled?: boolean
+  /** No API key needed (the server talks to it directly). */
+  keyless?: boolean
 }> = {
   anthropic: {
     name: 'Anthropic',
@@ -61,18 +66,41 @@ export const PROVIDERS: Record<LLMProvider, {
       'deepseek-ai/deepseek-v4-flash',
       'nvidia/nemotron-3-ultra-550b-a55b',
       'google/gemma-4-31b-it',
-      'nvidia/nemotron-3-nano-30b-a3b',
       'stepfun-ai/step-3.7-flash',
       'minimaxai/minimax-m3',
+      'minimaxai/minimax-m3.1-flash',
     ],
-    defaultModel: 'nvidia/nemotron-3-nano-30b-a3b',
-    fastModel:    'nvidia/nemotron-3-nano-30b-a3b',
+    // nvidia/nemotron-3-nano-30b-a3b was removed: NVIDIA now answers 410 Gone
+    // for it. NVIDIA retires models often, so no automatic "fast model" here —
+    // extraction uses whatever model the user picked and tested.
+    defaultModel: 'deepseek-ai/deepseek-v4-flash',
+    fastModel:    '',
+  },
+  local: {
+    name: 'Local',
+    placeholder: 'No key needed',
+    hint: 'Ollama, LM Studio or any OpenAI-compatible server on this machine — set LOCAL_LLM_BASE_URL in .env.local',
+    models: ['llama3.1:8b', 'qwen2.5:7b', 'qwen3:8b', 'gemma3:4b', 'mistral:7b'],
+    defaultModel: 'llama3.1:8b',
+    fastModel:    '',
+    enabled: process.env.NEXT_PUBLIC_ENABLE_LOCAL_LLM === 'true',
+    keyless: true,
   },
 }
+
+/** Providers shown in the pickers (Local only when enabled in env). */
+export function visibleProviders(): LLMProvider[] {
+  return (Object.keys(PROVIDERS) as LLMProvider[]).filter(id => PROVIDERS[id].enabled !== false)
+}
+
+/** Placeholder "key" for keyless providers, so every "has a key?" check passes. */
+export const KEYLESS_PLACEHOLDER = 'local-no-key'
 
 // ─── Fast model for parsing tasks ────────────────────────────────────────────
 
 export function getFastCreds(creds: BYOKCreds): BYOKCreds {
+  const fast = PROVIDERS[creds.provider]?.fastModel
+  if (!fast || fast === creds.model) return creds
   const isSlowModel =
     creds.model.includes('r1') ||
     creds.model.includes('o1') ||
@@ -85,7 +113,7 @@ export function getFastCreds(creds: BYOKCreds): BYOKCreds {
     creds.model.includes('kimi-k2') ||
     creds.model === 'openrouter/auto'
   if (isSlowModel) {
-    return { ...creds, model: PROVIDERS[creds.provider].fastModel }
+    return { ...creds, model: fast }
   }
   return creds
 }
@@ -95,7 +123,7 @@ export function getFastCreds(creds: BYOKCreds): BYOKCreds {
 export class LLMError extends Error {
   constructor(
     message: string,
-    public code: 'auth' | 'rate_limit' | 'timeout' | 'parse' | 'unknown',
+    public code: 'auth' | 'rate_limit' | 'timeout' | 'parse' | 'model' | 'unknown',
     public provider: LLMProvider
   ) {
     super(message)
@@ -119,6 +147,27 @@ const MAX_RETRIES = 1
 // session cookie forwarded anywhere.
 function getLLMProxyUrl(): string {
   return '/api/llm'
+}
+
+/**
+ * Parses a JSON response from our own API. When something in front of the app
+ * (host gateway, CDN, dev error page) answers with HTML or plain text instead —
+ * typically a 502/504 timeout — `res.json()` would throw a cryptic
+ * "Unexpected token '<' … is not valid JSON". Turn that into a useful message.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- drop-in for res.json(), which is also untyped
+export async function readJsonResponse<T extends { error?: string } = { error?: string } & Record<string, any>>(res: Response): Promise<T> {
+  const text = await res.text()
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    const timeout = res.status === 504 || res.status === 502 || res.status === 408
+    return {
+      error: timeout
+        ? `The server timed out waiting for the AI model (HTTP ${res.status}). Try a faster model, or try again.`
+        : `The server returned an unexpected response (HTTP ${res.status}). Please try again.`,
+    } as T
+  }
 }
 
 export async function callLLM<T = Record<string, unknown>>(options: LLMOptions): Promise<T> {
@@ -145,7 +194,7 @@ export async function callLLM<T = Record<string, unknown>>(options: LLMOptions):
         body: JSON.stringify({ creds, systemPrompt, userPrompt, maxTokens: attemptMaxTokens, temperature }),
       })
 
-      const data = await res.json() as { result?: T; error?: string }
+      const data = await readJsonResponse<{ result?: T; error?: string }>(res)
 
       if (!res.ok) {
         const msg = data.error || `Server error ${res.status}`
@@ -153,6 +202,8 @@ export async function callLLM<T = Record<string, unknown>>(options: LLMOptions):
         if (res.status === 401 || res.status === 403) throw new LLMError(msg, 'auth', creds.provider)
         if (res.status === 402) throw new LLMError(msg, 'auth', creds.provider)
         if (res.status === 429) throw new LLMError(msg, 'rate_limit', creds.provider)
+        // Model doesn't exist / was retired for this key — same request, same answer.
+        if (res.status === 404 || res.status === 410) throw new LLMError(msg, 'model', creds.provider)
         // Timeout — DO retry once with a smaller token budget (see above)
         if (res.status === 408) {
           lastError = new LLMError(msg, 'timeout', creds.provider)
@@ -182,7 +233,7 @@ export async function callLLM<T = Record<string, unknown>>(options: LLMOptions):
       // Don't retry user cancellation, auth, rate-limit, or parse errors
       if ((err as { name?: string }).name === 'AbortError') throw err
       if (err instanceof LLMError && (
-        err.code === 'auth' || err.code === 'rate_limit' || err.code === 'parse'
+        err.code === 'auth' || err.code === 'rate_limit' || err.code === 'parse' || err.code === 'model'
       )) throw err
 
       if (attempt < MAX_RETRIES) {

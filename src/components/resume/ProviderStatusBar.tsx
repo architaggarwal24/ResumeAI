@@ -2,7 +2,7 @@
 'use client'
 import { useState } from 'react'
 import { useResumeStore, getStoredKey } from '@/store/resumeStore'
-import { PROVIDERS } from '@/lib/llm/client'
+import { PROVIDERS, visibleProviders } from '@/lib/llm/client'
 import { CheckCircle, XCircle, AlertCircle, Loader2, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
@@ -41,7 +41,7 @@ export function ProviderStatusBar() {
   // synchronous, so this needs neither state nor an effect. The `hydrated`
   // guard above already keeps this from running during SSR.
   const savedKeys: Partial<Record<LLMProvider, boolean>> = {}
-  ;(Object.keys(PROVIDERS) as LLMProvider[]).forEach(id => {
+  ;visibleProviders().forEach(id => {
     savedKeys[id] = !!getStoredKey(id)
   })
   const anyKeySaved = Object.values(savedKeys).some(Boolean)
@@ -50,7 +50,7 @@ export function ProviderStatusBar() {
     <div className="mb-5 space-y-2">
       {/* Provider chips — click to select active provider */}
       <div className="flex flex-wrap gap-1.5">
-        {(Object.keys(PROVIDERS) as LLMProvider[]).map(id => {
+        {visibleProviders().map(id => {
           const hasKey   = !!savedKeys[id]
           const isActive = byokCreds.provider === id
           return (
@@ -139,7 +139,7 @@ export function ProviderStatusBar() {
             <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0"/>
             <p className="text-xs text-amber-300">
               <strong>{byokCreds.model}</strong> doesn&apos;t look like a valid {PROVIDERS[byokCreds.provider].name} model ID.
-              {byokCreds.provider === 'nvidia' && ' NVIDIA NIM format: provider/model-name e.g. nvidia/nemotron-3-nano-30b-a3b'}
+              {byokCreds.provider === 'nvidia' && ' NVIDIA NIM format: provider/model-name e.g. deepseek-ai/deepseek-v4-flash'}
               {byokCreds.provider === 'openrouter' && ' OpenRouter format: provider/model-name e.g. meta-llama/llama-3.1-8b-instruct:free'}
             </p>
           </div>

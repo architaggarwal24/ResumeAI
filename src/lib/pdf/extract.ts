@@ -19,7 +19,7 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024
 const MAX_PAGES = 30
 const PARSE_TIMEOUT_MS = 30_000
 
-interface TextItem { str?: string; transform?: number[] }
+interface TextItem { str?: string; transform?: number[]; width?: number; height?: number; hasEOL?: boolean }
 interface PDFPageProxy { getTextContent: () => Promise<{ items: TextItem[] }>; cleanup?: () => void }
 interface PDFDocumentProxy { numPages: number; getPage: (n: number) => Promise<PDFPageProxy> }
 interface PdfJsModule {
@@ -72,17 +72,7 @@ export async function extractTextFromPDF(file: File): Promise<string> {
       const page = await pdf.getPage(i)
       const content = await page.getTextContent()
 
-      // Sort by vertical position to preserve reading order
-      const items = content.items.filter(it => typeof it.str === 'string')
-      items.sort((a, b) => (b.transform?.[5] ?? 0) - (a.transform?.[5] ?? 0)) // PDF y-axis is inverted
-
-      const pageText = items
-        .map(item => item.str as string)
-        .filter(Boolean)
-        .join(' ')
-        .replace(/\s{3,}/g, '  ')
-        .trim()
-
+      const pageText = itemsToText(content.items)
       if (pageText) pages.push(pageText)
       page.cleanup?.()
     }
@@ -112,4 +102,47 @@ export function validatePDFFile(file: File): string | null {
     return 'That file is empty'
   }
   return null
+}
+
+/**
+ * Rebuilds reading order from pdf.js text items. Items are grouped into lines
+ * by baseline (with a tolerance, since baselines jitter), lines are ordered top
+ * to bottom and items left to right, and line breaks are kept. Joining every
+ * item with a space (the previous approach) flattened the whole page into one
+ * line, so section headings and bullets ran together and the model had to
+ * guess where one entry ended and the next began.
+ */
+export function itemsToText(rawItems: TextItem[]): string {
+  const items = rawItems
+    .filter(it => typeof it.str === 'string' && it.str.length > 0 && Array.isArray(it.transform))
+    .map(it => ({
+      str: it.str as string,
+      x: it.transform![4] ?? 0,
+      y: it.transform![5] ?? 0,
+      w: typeof it.width === 'number' ? it.width : 0,
+      h: Math.abs(it.height ?? it.transform![3] ?? 10) || 10,
+    }))
+  // Top of page first (PDF y grows upward), then left to right.
+  items.sort((a, b) => (b.y - a.y) || (a.x - b.x))
+
+  const lines: { y: number; h: number; parts: typeof items }[] = []
+  for (const it of items) {
+    const line = lines.find(l => Math.abs(l.y - it.y) <= Math.max(2, Math.min(l.h, it.h) * 0.5))
+    if (line) line.parts.push(it)
+    else lines.push({ y: it.y, h: it.h, parts: [it] })
+  }
+  lines.sort((a, b) => b.y - a.y)
+
+  return lines.map(l => {
+    l.parts.sort((a, b) => a.x - b.x)
+    let text = ''
+    let lastEnd: number | null = null
+    for (const p of l.parts) {
+      const gap = lastEnd === null ? 0 : p.x - lastEnd
+      if (lastEnd !== null && gap > p.h * 0.15 && !text.endsWith(' ') && !p.str.startsWith(' ')) text += gap > p.h * 3 ? '   ' : ' '
+      text += p.str
+      lastEnd = p.x + p.w
+    }
+    return text.replace(/[ \t]+$/g, '')
+  }).filter(t => t.trim()).join('\n').replace(/[ \t]{4,}/g, '   ').trim()
 }

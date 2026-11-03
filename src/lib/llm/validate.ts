@@ -4,7 +4,7 @@
 // that gets interpolated into a URL (Gemini), so it must not be able to change
 // the path or query.
 
-export const LLM_PROVIDER_IDS = ['anthropic', 'openai', 'gemini', 'openrouter', 'nvidia'] as const
+export const LLM_PROVIDER_IDS = ['anthropic', 'openai', 'gemini', 'openrouter', 'nvidia', 'local'] as const
 export type ProviderId = (typeof LLM_PROVIDER_IDS)[number]
 
 export interface ValidCreds { provider: ProviderId; apiKey: string; model: string }

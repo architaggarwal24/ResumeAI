@@ -8,6 +8,7 @@ import { VERSION_DIFF_PROMPT } from '@/lib/llm/prompts'
 import { formatDate, scoreColor, cn } from '@/lib/utils'
 import { History, Plus, RotateCcw, Trash2, ChevronRight, TrendingUp, TrendingDown, Minus, Loader2, GitBranch } from 'lucide-react'
 import type { ResumeData } from '@/types/resume'
+import { readJsonResponse } from '@/lib/llm/client'
 
 interface VersionMeta { id: string; label: string; ats_score: number | null; created_at: string }
 interface VersionFull extends VersionMeta { parsed_data: ResumeData }
@@ -81,7 +82,7 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
     setRestoring(true)
     try {
       const res = await fetch(`/api/resume/${resumeId}/versions/${id}`, { method: 'POST' })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       if (!res.ok) throw new Error(data.error)
       setResumeData(data.resume.parsed_data); setAnalysisResult(null)
       addToast(`Restored to "${data.restoredFrom}"`, 'success')

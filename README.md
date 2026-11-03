@@ -94,6 +94,33 @@ Open [http://localhost:3000](http://localhost:3000), sign up, and you're in.
 
 This app never stores or proxies your AI provider credentials server-side beyond the single request needed to fulfil an action — no server-side database column holds them, and they never appear in logs. They live in your browser's `sessionStorage`, which is cleared the moment you close the tab. See `src/lib/llm/client.ts` for the full provider/model configuration.
 
+### Running models locally (Ollama / LM Studio)
+
+To test everything on your own machine without an API key:
+
+1. Start a local model server:
+   - **Ollama:** install it, run `ollama pull llama3.1:8b` (or `qwen3:8b`), and keep `ollama serve` running. Its OpenAI-compatible API is at `http://127.0.0.1:11434/v1`.
+     Ollama's default context window is small; start it with `OLLAMA_CONTEXT_LENGTH=16384 ollama serve` so whole resumes fit.
+   - **LM Studio:** load a model, then Developer → Start server (`http://127.0.0.1:1234/v1`).
+2. Add to `.env.local` and restart `npm run dev`:
+   ```
+   NEXT_PUBLIC_ENABLE_LOCAL_LLM=true
+   LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1   # or http://127.0.0.1:1234/v1 for LM Studio
+   ```
+3. Pick **Local** in the provider bar. No key is needed, and the model list shows what your server has installed.
+
+Local models get a 3-minute time limit per call (`LLM_TIMEOUT_MS` changes it). Small models (≤8B) are much weaker at long structured JSON, so expect lower-quality scores than with hosted models.
+
+### Troubleshooting model errors
+
+Every failed model call prints one line in the `npm run dev` terminal, including the provider's own message:
+
+```
+[llm] runLLM failed provider=nvidia model=… status=410 after=24ms — provider said: Model '…' has reached its end of life.
+```
+
+Set `LLM_DEBUG=1` to also log successful calls with their timing. HTTP 410 from NVIDIA means the model was retired — pick another one.
+
 ## Project structure
 
 ```

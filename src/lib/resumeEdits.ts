@@ -1,4 +1,5 @@
 // src/lib/resumeEdits.ts
+import { extractJsonObject } from './llm/parse'
 import type { ResumeData } from '@/types/resume'
 
 /**
@@ -81,7 +82,12 @@ export function extractProposedEdits(content: string): {
 
   const text = content.replace(editBlockRe, (match, jsonStr) => {
     try {
-      const parsed = JSON.parse(jsonStr.trim())
+      // Tolerant parse: models often put raw line breaks or unescaped quotes
+      // inside the JSON, which made the block show up as raw text instead of
+      // an Apply card.
+      const r = extractJsonObject(jsonStr)
+      if (!r.ok) return match
+      const parsed = r.value as Record<string, unknown>
       // Only treat it as a proposed edit if it has the expected shape —
       // otherwise leave non-edit code blocks (e.g. example code) untouched
       if (parsed && typeof parsed === 'object' && parsed.suggested && parsed.targetId) {
@@ -102,7 +108,11 @@ export function extractProposedEdits(content: string): {
       // leave the block untouched rather than silently dropping content
       return match
     }
-  }).trim()
+  })
+    // Removing a block leaves its surrounding blank lines behind; collapse them
+    // so the message doesn't show a large empty gap where the card was.
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 
   return { text, edits }
 }

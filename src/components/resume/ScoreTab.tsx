@@ -1,6 +1,6 @@
 // src/components/resume/ScoreTab.tsx
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useResumeStore, hashResumeData } from '@/store/resumeStore'
 import { Button, SectionBlock, StrengthBadge, ScoreBar, Badge } from '@/components/ui/primitives'
 import { Gauge, RadarChart, RadarGrid, RadarAxis, RadarLabels, RadarArea } from '@/components/vendor/bklit'
@@ -19,6 +19,7 @@ import { SPRING } from '@/lib/motion'
 import { scoreColor, cn, generateId } from '@/lib/utils'
 import { applyResumeEdit } from '@/lib/resumeEdits'
 import type { AnalysisResult, Strength, GenerateSectionResult, GeneratableSection, SectionImproveResult } from '@/types/resume'
+import { readJsonResponse } from '@/lib/llm/client'
 
 const SECTION_META = {
   summary:    { label: 'Summary',    icon: FileText },
@@ -130,7 +131,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resumeId, resumeData, creds: byokCreds, type: 'score' }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       if (!res.ok) throw new Error(data.error)
       setAnalysisResult(normalizeAnalysis(data.result))
       addToast('Score updated', 'success')
@@ -281,10 +282,23 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
   // Normalize on load (guards against bad DB-stored results)
   const safeResult = analysisResult ? normalizeAnalysis(analysisResult) : null
 
-  // Auto-trigger if no result yet
-  if (!safeResult && !isLoading && resumeData && byokCreds.apiKey) {
-    setTimeout(runScoring, 100)
-  }
+  // Auto-score once per resume when there's no result yet. This used to run
+  // during render (setTimeout on every render until loading flipped), which
+  // fired /api/analyze two or more times per visit — duplicate LLM calls on
+  // the user's own API key. The short delay lets ResumeShell load any saved
+  // analysis into the store first; the store is re-checked when it fires.
+  const autoScoredFor = useRef<string | null>(null)
+  const needsAutoScore = !safeResult && !isLoading && !!resumeData && !!byokCreds.apiKey
+  useEffect(() => {
+    if (!needsAutoScore || autoScoredFor.current === resumeId) return
+    const t = setTimeout(() => {
+      const st = useResumeStore.getState()
+      if (st.analysisResult || st.loading.analyzing || !st.resumeData || st.resumeId !== resumeId) return
+      autoScoredFor.current = resumeId
+      runScoring()
+    }, 150)
+    return () => clearTimeout(t)
+  }, [needsAutoScore, resumeId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Which section scores lowest — open that one by default so users land on
   // the thing that needs the most attention

@@ -5,7 +5,7 @@ import type {
   LLMProvider, ResumeTab, Toast, ToastType, TemplateId,
   CoverLetter,
 } from '@/types/resume'
-import { PROVIDERS } from '@/lib/llm/client'
+import { PROVIDERS, KEYLESS_PLACEHOLDER, visibleProviders } from '@/lib/llm/client'
 
 // ─── Storage helpers ──────────────────────────────────────────────────────────
 // Keys are stored in sessionStorage (cleared when the tab/window is closed;
@@ -23,7 +23,10 @@ function write(key: string, val: string): void {
   try { sessionStorage.setItem(key, val) } catch {}
 }
 
-export function getStoredKey(provider: LLMProvider): string    { return read(`${KEY_PREFIX}${provider}`) }
+export function getStoredKey(provider: LLMProvider): string {
+  if (PROVIDERS[provider]?.keyless) return KEYLESS_PLACEHOLDER
+  return read(`${KEY_PREFIX}${provider}`)
+}
 export function setStoredKey(provider: LLMProvider, key: string) { write(`${KEY_PREFIX}${provider}`, key) }
 export function getStoredProvider(): LLMProvider {
   // A provider name saved by an older version of the app (or an already-open
@@ -31,7 +34,7 @@ export function getStoredProvider(): LLMProvider {
   // PROVIDERS[unknown] is undefined and would crash the moment anything reads
   // its defaultModel.
   const stored = read(PROVIDER_KEY)
-  return Object.prototype.hasOwnProperty.call(PROVIDERS, stored) ? (stored as LLMProvider) : 'anthropic'
+  return Object.prototype.hasOwnProperty.call(PROVIDERS, stored) && PROVIDERS[stored as LLMProvider].enabled !== false ? (stored as LLMProvider) : 'anthropic'
 }
 export function getStoredModel(provider: LLMProvider): string  { return read(`${MODEL_KEY}${provider}`) || PROVIDERS[provider].defaultModel }
 
@@ -152,7 +155,9 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     let provider = getStoredProvider()
     // If the stored provider has no key, switch to the first one that does
     if (!getStoredKey(provider)) {
-      const withKey = (Object.keys(PROVIDERS) as LLMProvider[]).find(p => !!getStoredKey(p))
+      const ids = visibleProviders()
+      // A provider with a real saved key first; otherwise an enabled keyless one (Local).
+      const withKey = ids.find(p => !PROVIDERS[p].keyless && !!getStoredKey(p)) ?? ids.find(p => PROVIDERS[p].keyless)
       if (withKey) provider = withKey
     }
     set({ byokCreds: buildCreds(provider), hydrated: true })

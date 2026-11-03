@@ -5,6 +5,7 @@ import { useResumeStore } from '@/store/resumeStore'
 import { Button } from '@/components/ui/primitives'
 import { Sparkles, RefreshCw, Check, X } from 'lucide-react'
 import type { PointerSuggestionResult } from '@/types/resume'
+import { readJsonResponse } from '@/lib/llm/client'
 
 interface PointerSuggestionProps {
   resumeId: string
@@ -37,7 +38,7 @@ export function PointerSuggestion({
           pointer: { targetId, currentText, sectionContext, currentAtsScore },
         }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       if (!res.ok) throw new Error(data.error)
       setResult(data.result)
       setStatus('ready')

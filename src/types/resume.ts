@@ -235,7 +235,7 @@ export interface UserRow {
 
 // ─── LLM / BYOK ───────────────────────────────────────────────────────────────
 
-export type LLMProvider = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'nvidia'
+export type LLMProvider = 'anthropic' | 'openai' | 'gemini' | 'openrouter' | 'nvidia' | 'local'
 
 // Per-provider credentials stored separately so switching tabs doesn't wipe keys
 export type PerProviderKeys = Partial<Record<LLMProvider, string>>

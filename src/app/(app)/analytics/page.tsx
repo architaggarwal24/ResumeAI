@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
                 </div>
                 {r.currentScore != null && <ScoreBar value={r.currentScore} />}
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-xs text-slate-500">{r.totalAnalyses} analyse{r.totalAnalyses !== 1 ? 's' : ''}</span>
+                  <span className="text-xs text-slate-500">{r.totalAnalyses} {r.totalAnalyses === 1 ? 'analysis' : 'analyses'}</span>
                   {r.improvement != null && (
                     <ImprovementChip improvement={r.improvement} />
                   )}
@@ -188,7 +188,7 @@ function ResumeDetail({ resume }: { resume: ResumeAnalyticsSummary }) {
       <div className="flex items-start justify-between">
         <div>
           <h2 className="truncate text-2xl font-semibold tracking-tight text-white">{resume.resumeName}</h2>
-          <p className="text-xs text-slate-500">{resume.totalAnalyses} analyses recorded</p>
+          <p className="text-xs text-slate-500">{resume.totalAnalyses} {resume.totalAnalyses === 1 ? 'analysis' : 'analyses'} recorded</p>
         </div>
         <Link href={`/resume/${resume.resumeId}`}
           className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300">

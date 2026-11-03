@@ -6,6 +6,7 @@ import { Button, Card, CardSm, ScoreBar, Badge } from '@/components/ui/primitive
 import { Zap, ChevronDown, ChevronUp, Check, X, CheckCheck, Undo2, Redo2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Suggestion } from '@/types/resume'
+import { readJsonResponse } from '@/lib/llm/client'
 
 function asArray(val: unknown): unknown[] {
   if (Array.isArray(val)) return val
@@ -37,7 +38,7 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resumeId, resumeData, jobDescription: localJD, creds: byokCreds, type: 'ats' }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       if (!res.ok) throw new Error(data.error)
       setATSResult(data.result)
       setDismissed(new Set()); setAccepted(new Set())

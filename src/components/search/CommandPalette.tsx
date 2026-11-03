@@ -19,7 +19,7 @@ const QUICK_LINKS: { label: string; href: string; icon: LucideIcon; hint: string
   { label: 'Dashboard',    href: '/dashboard', icon: LayoutDashboard, hint: 'Overview' },
   { label: 'New resume',   href: '/upload',    icon: Upload,          hint: 'Upload a PDF or DOCX' },
   { label: 'Build resume', href: '/build',     icon: Wand2,           hint: 'Start from scratch' },
-  { label: 'Job tracker',  href: '/jobs',      icon: Briefcase,       hint: 'Applications' },
+  { label: 'Job tracker',  href: '/jobs',      icon: Briefcase,       hint: 'Coming soon' },
   { label: 'Analytics',    href: '/analytics', icon: BarChart2,       hint: 'Score history' },
   { label: 'Settings',     href: '/settings',  icon: Settings,        hint: 'Keys & account' },
 ]

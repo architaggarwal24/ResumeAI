@@ -13,13 +13,13 @@ import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { Kbd } from '@/components/ui/glass/Atoms'
 import type { User } from '@supabase/supabase-js'
 
-interface NavItem { href: string; icon: LucideIcon; label: string }
+interface NavItem { href: string; icon: LucideIcon; label: string; soon?: boolean }
 
 const NAV: NavItem[] = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/upload',    icon: Upload,          label: 'New resume' },
   { href: '/build',     icon: Wand2,           label: 'Build resume' },
-  { href: '/jobs',      icon: Briefcase,       label: 'Job tracker' },
+  { href: '/jobs',      icon: Briefcase,       label: 'Job tracker', soon: true },
   { href: '/analytics', icon: BarChart2,       label: 'Analytics' },
 ]
 
@@ -109,7 +109,7 @@ function Sidebar({ user, pathname, collapsed, onToggle, onSignOut }: {
         <nav aria-label="Primary" className="flex-1 overflow-y-auto" onMouseLeave={() => setHover(null)}>
           {!collapsed && <p className="px-3 pb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Workspace</p>}
           <ul className="space-y-1">
-            {NAV.map(({ href, icon: Icon, label }) => {
+            {NAV.map(({ href, icon: Icon, label, soon }) => {
               const active = isActive(pathname, href)
               return (
                 <li key={href} className="relative">
@@ -127,6 +127,7 @@ function Sidebar({ user, pathname, collapsed, onToggle, onSignOut }: {
                   >
                     <Icon size={18} className={cn('shrink-0 transition-colors', active && 'text-violet-200')} />
                     {!collapsed && <span>{label}</span>}
+                    {!collapsed && soon && <SoonTag />}
                   </Link>
                   {active && (
                     <motion.span layoutId="nav-active" transition={SPRING.snappy}
@@ -263,12 +264,16 @@ function MobileChrome({ user, pathname, onSignOut }: { user: User; pathname: str
   )
 }
 
-function SheetLink({ href, icon: Icon, label, onClick }: { href: string; icon: LucideIcon; label: string; onClick: () => void }) {
+function SheetLink({ href, icon: Icon, label, soon, onClick }: { href: string; icon: LucideIcon; label: string; soon?: boolean; onClick: () => void }) {
   return (
     <Link href={href} onClick={onClick} className="press flex min-h-12 items-center gap-3 rounded-2xl px-3 text-[15px] text-slate-200 active:bg-white/[0.06]">
-      <Icon size={18} className="text-violet-300" />{label}
+      <Icon size={18} className="text-violet-300" />{label}{soon && <SoonTag />}
     </Link>
   )
+}
+
+function SoonTag() {
+  return <span className="ml-auto rounded-full border border-violet-300/20 bg-violet-500/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-violet-200">Soon</span>
 }
 
 /* ─── Shell ──────────────────────────────────────────────────────────────── */

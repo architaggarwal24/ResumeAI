@@ -8,7 +8,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, FileText, Sparkles, Link2, Clipboard, AlertTriangle, X, Clock, Lock } from 'lucide-react'
 import { extractTextFromPDF, validatePDFFile } from '@/lib/pdf/extract'
-import { callLLM, getFastCreds } from '@/lib/llm/client'
+import { callLLM, getFastCreds, readJsonResponse, LLMError } from '@/lib/llm/client'
 import { PARSE_PROMPT } from '@/lib/llm/prompts'
 import { useResumeStore } from '@/store/resumeStore'
 import { ProviderStatusBar } from '@/components/resume/ProviderStatusBar'
@@ -51,6 +51,7 @@ export default function UploadPage() {
   // LinkedIn state
   const [liUrl, setLiUrl]               = useState('')
   const [liPaste, setLiPaste]           = useState('')
+  const [fallbackModel, setFallbackModel] = useState<string | null>(null)
   const [liStep, setLiStep]             = useState<LinkedInStep>('idle')
   const [liError, setLiError]           = useState('')
   const [showPasteFallback, setShowPaste] = useState(false)
@@ -88,8 +89,9 @@ export default function UploadPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: parsed.name || label, rawText, parsedData: parsed }),
     })
-    if (!res.ok) throw new Error('Failed to save resume')
-    const { resume } = await res.json()
+    const data = await readJsonResponse<{ resume?: { id: string }; error?: string }>(res)
+    if (!res.ok || !data.resume) throw new Error(data.error || 'Failed to save resume')
+    const { resume } = data
     setResumeData(parsed); setRawText(rawText); setResumeId(resume.id)
     if (jd) setJobDescription(jd)
     setStep('done')
@@ -102,24 +104,39 @@ export default function UploadPage() {
     if (validError) { setError(validError); return validError }
     if (!byokCreds.apiKey) { const m = 'Enter your API key above first.'; setError(m); return m }
 
-    setFile(f); setError(''); setStep('reading')
+    setFile(f); setError(''); setStep('reading'); setFallbackModel(null)
     abortRef.current = new AbortController()
 
     try {
       const rawText = await extractTextFromPDF(f)
       setStep('parsing')
 
-      // Truncate to 6000 chars — enough for any resume, faster on slow/free models
-      const truncated = rawText.slice(0, 6000)
+      // Cap the text sent to the model. 6,000 characters (the old cap) cut off
+      // the end of typical two-page resumes — often education and projects.
+      const truncated = rawText.slice(0, 15_000)
 
       // Use fast model for parsing — no need for reasoning models for extraction
       const parseCreds = getFastCreds(byokCreds)
-      const parsed = await callLLM<ResumeData>({
-        creds: parseCreds,
+      const parseWith = (creds: typeof byokCreds) => callLLM<ResumeData>({
+        creds,
         systemPrompt: PARSE_PROMPT,
         userPrompt: `Parse this resume:\n\n${truncated}`,
-        signal: abortRef.current.signal,
+        // A full resume as JSON can exceed 4k tokens (more with reasoning models).
+        maxTokens: 8192,
+        signal: abortRef.current!.signal,
       })
+      let parsed: ResumeData
+      try {
+        parsed = await parseWith(parseCreds)
+      } catch (err) {
+        // The auto-picked faster model can be retired or unavailable for this
+        // key (NVIDIA answers 410 Gone). Fall back to the model the user chose,
+        // which their "Test" button already checked.
+        if (!(err instanceof LLMError && err.code === 'model' && parseCreds.model !== byokCreds.model)) throw err
+        addToast(`${parseCreds.model} isn't available — using ${byokCreds.model} instead`, 'info', 5000)
+        setFallbackModel(byokCreds.model)
+        parsed = await parseWith(byokCreds)
+      }
 
       await saveAndRedirect(parsed, rawText, f.name.replace('.pdf', ''))
       return null
@@ -127,8 +144,10 @@ export default function UploadPage() {
       if ((err as { name?: string }).name === 'AbortError') return null // user cancelled
       setStep('idle')
       let msg = err instanceof Error ? err.message : 'Something went wrong'
-      if (msg.includes('timed out') || msg.includes('aborted') || msg.includes('AbortError')) {
-        msg = 'Request timed out. Switch to a faster model (gemini-2.0-flash or gpt-4o-mini) and try again.'
+      // Server messages already say what happened (model, limit, what to try).
+      // Only a raw browser abort needs translating.
+      if (/^(aborted|AbortError)/i.test(msg) || msg === 'The operation was aborted.') {
+        msg = `No answer from ${byokCreds.model} in time. Try again, or pick a smaller or local model.`
       }
       setError(msg)
       addToast(msg, 'error', 8000)
@@ -152,7 +171,7 @@ export default function UploadPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
 
       if (!res.ok) {
         if (data.fallback) setShowPaste(true)
@@ -251,6 +270,7 @@ export default function UploadPage() {
                   <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
                     <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.07)" strokeWidth="6" />
                     <motion.circle cx="50" cy="50" r="44" fill="none" stroke="url(#up-g)" strokeWidth="6" strokeLinecap="round" strokeDasharray={276}
+                      initial={{ strokeDashoffset: 276 }}
                       animate={{ strokeDashoffset: 276 * (1 - (pdfStepIndex + 0.5) / 3) }} transition={SPRING.soft} />
                     <defs><linearGradient id="up-g" x1="0" x2="1"><stop offset="0" stopColor="#a78bfa" /><stop offset="1" stopColor="#e879f9" /></linearGradient></defs>
                   </svg>
@@ -264,15 +284,15 @@ export default function UploadPage() {
                   activeIndex={pdfStepIndex}
                   steps={[
                     { label: 'Reading the PDF in your browser', detail: ['Extracting text locally'] },
-                    { label: 'Extracting structure with AI', detail: [`Model: ${getFastCreds(byokCreds).model}`] },
+                    { label: 'Extracting structure with AI', detail: [`Model: ${fallbackModel ?? getFastCreds(byokCreds).model}`] },
                     { label: 'Saving to your account', detail: ['Creating your resume'] },
                   ]}
                 />
 
                 {step === 'parsing' && (
                   <div className="space-y-0.5 text-center">
-                    <p className="tabular font-mono text-xs text-slate-400">{formatElapsed(elapsed)} · {getFastCreds(byokCreds).model}</p>
-                    {getFastCreds(byokCreds).model !== byokCreds.model && (
+                    <p className="tabular font-mono text-xs text-slate-400">{formatElapsed(elapsed)} · {fallbackModel ?? getFastCreds(byokCreds).model}</p>
+                    {!fallbackModel && getFastCreds(byokCreds).model !== byokCreds.model && (
                       <p className="text-xs text-slate-500">Auto-switched for faster extraction</p>
                     )}
                   </div>

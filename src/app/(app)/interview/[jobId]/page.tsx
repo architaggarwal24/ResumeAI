@@ -11,6 +11,7 @@ import {
   Loader2
 } from 'lucide-react'
 import type { InterviewPrepResult, InterviewQuestion, QuestionType } from '@/types/resume'
+import { readJsonResponse } from '@/lib/llm/client'
 
 const TYPE_STYLES: Record<QuestionType, { label: string; color: string; bg: string }> = {
   behavioral:  { label: 'Behavioral',  color: 'text-blue-400',    bg: 'bg-blue-400/10 border-blue-400/20'    },
@@ -75,7 +76,7 @@ export default function InterviewPrepPage() {
           company: job?.company, role: job?.role, creds: byokCreds,
         }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       if (!res.ok) throw new Error(data.error)
       setResult(data.result)
       setQuestions(data.result.questions)

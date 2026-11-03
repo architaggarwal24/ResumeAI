@@ -6,6 +6,7 @@ import { Button, Card } from '@/components/ui/primitives'
 import { FileText, Copy, Download, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CoverLetterTone } from '@/types/resume'
+import { readJsonResponse } from '@/lib/llm/client'
 
 const TONES: { id: CoverLetterTone; label: string; desc: string }[] = [
   { id: 'professional',  label: 'Professional',  desc: 'Formal, polished, corporate' },
@@ -32,7 +33,7 @@ export function CoverLetterTab({ resumeId }: { resumeId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resumeId, resumeData, jobDescription: localJD, tone, creds: byokCreds }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       if (!res.ok) throw new Error(data.error)
       setContent(data.content)
       setSubject(data.subjectLine)

@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { renderTemplate } from '@/lib/templates/render'
 import { Sparkles, ChevronRight, ChevronLeft, Check, Plus, Trash2, User, Briefcase, GraduationCap, Code2, Eye } from 'lucide-react'
 import type { ResumeData, Experience, Education } from '@/types/resume'
+import { readJsonResponse } from '@/lib/llm/client'
 
 const STEPS = [
   { id: 'contact',    label: 'Contact',    icon: <User size={14}/>        },
@@ -86,8 +87,9 @@ export default function BuildPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: data.name, rawText, parsedData: data }),
       })
-      if (!res.ok) throw new Error('Save failed')
-      const { resume } = await res.json()
+      const saved = await readJsonResponse<{ resume?: { id: string }; error?: string }>(res)
+      if (!res.ok || !saved.resume) throw new Error(saved.error || 'Save failed')
+      const { resume } = saved
       setResumeData(data); setResumeId(resume.id)
       addToast(`"${data.name}" created!`, 'success')
       router.push(`/resume/${resume.id}`)

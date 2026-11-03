@@ -5,6 +5,7 @@ import { useResumeStore } from '@/store/resumeStore'
 import { Button } from '@/components/ui/primitives'
 import { Sparkles, RefreshCw, Check, X, AlertTriangle } from 'lucide-react'
 import type { GenerateSectionResult, GeneratableSection } from '@/types/resume'
+import { readJsonResponse } from '@/lib/llm/client'
 
 interface GenerateSectionBoxProps {
   resumeId: string
@@ -36,7 +37,7 @@ export function GenerateSectionBox({ resumeId, section, label, onApply }: Genera
           creds: byokCreds, type: 'generate_section', section,
         }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       if (!res.ok) throw new Error(data.error)
       setResult(data.result)
     } catch (err) {

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useResumeStore, getStoredKey } from '@/store/resumeStore'
-import { PROVIDERS } from '@/lib/llm/client'
+import { PROVIDERS, visibleProviders } from '@/lib/llm/client'
+import { useLocalModels } from '@/lib/llm/useLocalModels'
 import { TEMPLATES } from '@/lib/templates/render'
 import { Button, Card } from '@/components/ui/primitives'
 import { TwoFactorCard } from '@/components/settings/TwoFactorCard'
@@ -41,7 +42,9 @@ export default function SettingsPage() {
   const [jsonError, setJsonError]           = useState('')
 
   const cfg = PROVIDERS[byokCreds.provider]
-  const isCustomModel = !cfg.models.includes(byokCreds.model)
+  const local = useLocalModels(byokCreds.provider === 'local')
+  const modelOptions = byokCreds.provider === 'local' && local.models.length ? local.models : cfg.models
+  const isCustomModel = !modelOptions.includes(byokCreds.model)
 
   useEffect(() => {
     async function load() {
@@ -167,7 +170,7 @@ export default function SettingsPage() {
 
         {/* Provider tabs */}
         <div className="flex gap-1 p-1 bg-ink rounded-xl mb-4 overflow-x-auto">
-          {(Object.keys(PROVIDERS) as LLMProvider[]).map(id => (
+          {visibleProviders().map(id => (
             <button key={id}
               className={cn(
                 'flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all whitespace-nowrap',
@@ -186,6 +189,7 @@ export default function SettingsPage() {
                 <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">
                   API Key — {cfg.name}
                 </label>
+                {cfg.keyless ? <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-300">No API key needed — the server talks to your local model directly.</div> : (
                 <div className="relative">
                   <input
                     type={showKeys[byokCreds.provider] ? 'text' : 'password'}
@@ -200,7 +204,9 @@ export default function SettingsPage() {
                     {showKeys[byokCreds.provider] ? <EyeOff size={14}/> : <Eye size={14}/>}
                   </button>
                 </div>
+                )}
                 <p className="text-xs text-slate-500 mt-1">{cfg.hint}</p>
+                {byokCreds.provider === 'local' && local.error && <p className="text-xs text-amber-300 mt-1">{local.error}</p>}
               </>
           </div>
 
@@ -215,7 +221,7 @@ export default function SettingsPage() {
               }}
               className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] mb-2"
             >
-              {cfg.models.map(m => <option key={m} value={m}>{m}</option>)}
+              {modelOptions.map(m => <option key={m} value={m}>{m}</option>)}
               {isCustomModel && <option value="__custom_active__">{byokCreds.model} (custom)</option>}
               <option value="__custom__">+ Custom model ID…</option>
             </select>
@@ -224,7 +230,7 @@ export default function SettingsPage() {
               <div className="flex gap-1.5 mb-2 fade-in">
                 <input value={customModel} onChange={e => setCustomModel(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && applyCustomModel()}
-                  placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. nvidia/nemotron-3-nano-30b-a3b' : 'model ID'} autoFocus
+                  placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. deepseek-ai/deepseek-v4-flash' : byokCreds.provider === 'local' ? 'e.g. llama3.1:8b' : 'model ID'} autoFocus
                   className="flex-1 bg-white/[0.04] border border-violet-500/40 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/70"/>
                 <button onClick={applyCustomModel} className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-xl">Use</button>
                 <button onClick={() => setShowCustom(false)} className="px-2 py-1.5 bg-white/5 text-slate-400 text-xs rounded-xl">✕</button>
@@ -269,7 +275,7 @@ export default function SettingsPage() {
         <div className="mt-4 pt-4 border-t border-white/[0.08]">
           <p className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-2">Saved Keys</p>
           <div className="grid grid-cols-3 gap-2">
-            {(Object.keys(PROVIDERS) as LLMProvider[]).map(id => {
+            {visibleProviders().map(id => {
               const hasKey = !!getStoredKey(id)
               return (
                 <div key={id} className={cn('flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs border',

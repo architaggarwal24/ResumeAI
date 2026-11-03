@@ -5,7 +5,8 @@ import { scoreHex } from '@/lib/score'
 
 // Small score ring for cards and lists (Kokonut "spending ring" idea).
 export function MiniRing({ score, size = 44, className }: { score: number; size?: number; className?: string }) {
-  const s = Math.max(0, Math.min(100, Math.round(Number.isFinite(score) ? score : 0)))
+  const n = Number(score) // tolerate numeric strings (Postgres NUMERIC via some clients)
+  const s = Math.max(0, Math.min(100, Math.round(Number.isFinite(n) ? n : 0)))
   const [ready, setReady] = useState(false)
   useEffect(() => { const id = window.setTimeout(() => setReady(true), 50); return () => window.clearTimeout(id) }, [])
   const R = 17, C = 2 * Math.PI * R

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runLLM } from '@/lib/llm/server'
 import { validateCreds, type ValidCreds } from '@/lib/llm/validate'
+import { localLlmEnabled, localBaseUrl, llmTimeoutMs, LOCAL_DISABLED_MESSAGE } from '@/lib/llm/local'
 import { getAuthedUser, unauthorized, limitUser, parseBody, MAX_BODY } from '@/lib/security/guards'
 
 // 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
@@ -59,15 +60,18 @@ async function checkBasicConnection(creds: ValidCreds): Promise<CheckResult> {
     return { ok: true, latencyMs: Date.now() - start }
   }
 
+  if (creds.provider === 'local' && !localLlmEnabled()) return { ok: false, error: LOCAL_DISABLED_MESSAGE }
+  const localBase = creds.provider === 'local' ? localBaseUrl() : null
+  if (creds.provider === 'local' && !localBase) return { ok: false, error: 'LOCAL_LLM_BASE_URL is not a valid http(s) URL' }
   const urls: Record<string, string> = {
     openai:     'https://api.openai.com/v1/chat/completions',
     openrouter: 'https://openrouter.ai/api/v1/chat/completions',
     nvidia:     'https://integrate.api.nvidia.com/v1/chat/completions',
+    ...(localBase ? { local: `${localBase}/chat/completions` } : {}),
   }
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${creds.apiKey}`,
-  }
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (creds.provider !== 'local') headers['Authorization'] = `Bearer ${creds.apiKey}`
+  else if (process.env.LOCAL_LLM_API_KEY) headers['Authorization'] = `Bearer ${process.env.LOCAL_LLM_API_KEY}`
   if (creds.provider === 'openrouter') {
     headers['HTTP-Referer'] = 'https://resumeai.app'
     headers['X-Title'] = 'ResumeAI'
@@ -77,11 +81,18 @@ async function checkBasicConnection(creds: ValidCreds): Promise<CheckResult> {
     headers,
     body: JSON.stringify({ model: creds.model, max_tokens: 10, messages: [{ role: 'user', content: 'Hi' }] }),
     redirect: 'error',
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(creds.provider === 'local' ? llmTimeoutMs('local') : 20000),
+  }).catch((err: unknown) => {
+    if (creds.provider === 'local') {
+      throw new Error(`Couldn't reach your local model server at ${localBase} — is it running? (${err instanceof Error ? err.name : 'error'})`)
+    }
+    throw err
   })
   if (!res.ok) {
-    const e = await res.json().catch(() => ({})) as { error?: { message?: string } }
-    const msg = e?.error?.message || ''
+    const e = await res.json().catch(() => ({})) as { error?: { message?: string } | string; detail?: unknown }
+    const msg = (typeof e?.error === 'string' ? e.error : e?.error?.message) || (typeof e?.detail === 'string' ? e.detail : '')
+    console.error(`[llm] test-connection failed provider=${creds.provider} model=${creds.model} status=${res.status}${msg ? ` — ${msg.replace(/\b(sk-ant-|sk-or-|sk-|nvapi-|AIza)[A-Za-z0-9_*.-]{4,}/g, '$1****').slice(0, 300)}` : ''}`)
+    if (res.status === 410) return { ok: false, error: `NVIDIA has retired "${creds.model}" (HTTP 410) — pick another model` }
     if (res.status === 401 || res.status === 403) return { ok: false, error: 'Invalid API key' }
     if (res.status === 402) return { ok: false, error: 'Insufficient credits — add credits to your account' }
     if (res.status === 404) return { ok: false, error: `Model "${creds.model}" not found — check the model ID` }
@@ -140,7 +151,9 @@ export async function POST(request: NextRequest) {
     if (name === 'TimeoutError') {
       return NextResponse.json({ ok: false, error: 'Connection timed out — check your API key and try again' })
     }
-    console.error('[POST /api/test-connection]', name)
-    return NextResponse.json({ ok: false, error: 'Connection test failed' })
+    const message = err instanceof Error ? err.message : ''
+    console.error('[POST /api/test-connection]', name || 'error', message.slice(0, 200))
+    if (message.startsWith('Couldn’t reach') || message.startsWith("Couldn't reach")) return NextResponse.json({ ok: false, error: message })
+    return NextResponse.json({ ok: false, error: 'Connection test failed — see the server log for details' })
   }
 }

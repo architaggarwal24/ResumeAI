@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/primitives'
 import { cn, generateId, scoreColor } from '@/lib/utils'
 import { BriefcaseIcon, Send, Loader2, RotateCcw, TrendingUp, BookOpen, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, Target, MessagesSquare, BarChart3, ClipboardList, type LucideIcon } from 'lucide-react'
 import type { InterviewMessage, MockInterviewDebrief } from '@/types/resume'
+import { readJsonResponse } from '@/lib/llm/client'
 
 const DEBRIEF_TRIGGERS = ['debrief', 'show debrief', 'show results', 'get results', 'see results']
 const QUESTION_COUNT = 8  // hiring manager skill: 5 technical + 3 behavioural
@@ -152,7 +153,7 @@ export function InterviewTab() {
           targetRole: targetRole.trim() || undefined,
         }),
       })
-      const data = await res.json() as { result?: MockInterviewDebrief; error?: string }
+      const data = await readJsonResponse<{ result?: MockInterviewDebrief; error?: string }>(res)
       if (!res.ok || !data.result) throw new Error(data.error || 'Debrief failed')
       setDebrief(data.result)
     } catch (err) {
