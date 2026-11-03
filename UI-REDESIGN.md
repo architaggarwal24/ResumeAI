@@ -1,36 +1,36 @@
-# UI redesign — real components from your reference sites
+# UI redesign — "Glass Desk" (purple + black)
 
-## What I used (source copied under each library's licence)
+A full visual and motion redesign of every screen. No API, Supabase, store or LLM logic was changed.
 
-All vendored files live in `src/components/vendor/<library>/`, each starting with an attribution comment. Full licence texts are in `THIRD_PARTY_NOTICES.md`.
+## Design system
+- **Colour:** purple-black ink (`#08070b`), violet as the working colour (`violet-*` scale in `globals.css`), fuchsia as the highlighter. Score semantics stay traffic-light (emerald ≥70, amber 45–69, rose <45).
+- **Type:** Space Grotesk (UI + display) and JetBrains Mono (numbers, labels), self-hosted in `src/app/fonts/` via `next/font/local` (CSP-safe, OFL — see `THIRD_PARTY_NOTICES.md`).
+- **Surfaces:** `.glass`, `.glass-strong`, `.glass-subtle` + `.edge` (gradient hairline). Component classes live in `@layer components` so Tailwind utilities on the same element always win.
+- **Motion:** springs and variants in `src/lib/motion.ts`. `MotionProvider` (`components/ui/glass/MotionTier.tsx`) picks a tier — `full` (capable desktop: WebGL aurora, cursor glow, tilt, magnetic buttons), `lite` (touch / ≤4 cores / ≤4 GB / Save-Data: CSS motion only) or `off` (reduced motion) — and mirrors it to `<html data-motion>`.
 
-| Site | Licence | Components now in the app | Where |
-|---|---|---|---|
-| **reactbits.dev** | MIT + Commons Clause | SoftAurora (WebGL hero), BlurText, RotatingText, ShinyText, CountUp, ScrollVelocity, StarBorder, Magnet, ClickSpark, SpotlightCard, HoldButton | Landing, dashboard, analytics, sidebar brand, hold-to-delete |
-| **kokonutui.com** | MIT | MarkerText, BackgroundPaths, SmoothTab, AI Loading State, FileUpload | Hero headline, login/signup, editor tabs, scoring + import progress, PDF upload |
-| **smoothui.dev** | MIT | FloatInput, ContributionGraph, ScrollRevealParagraph, FAQ block | Auth fields, analytics + landing activity graph, landing |
-| **ui.unlumen.com** | MIT | Highlight (gliding hover/active background) | Sidebar nav, landing nav |
-| **bklit.com** | MIT | Gauge, RadarChart, AreaChart, AreaSparkline (+ the shared chart files they need) | Score tab, landing demo, analytics, dashboard |
+## Shared kit — `src/components/ui/glass/`
+`Button` / `IconButton` (magnetic, ripple, sheen, beam, loading), `GlassPanel` (spotlight + tilt), `Field` (floating-label input), `Reveal` / `RevealGroup` / `TextReveal`, `Badge`, `Kbd`, `Eyebrow`, `Skeleton`, `Marquee`, `AuroraBackdrop`, `CursorGlow`, `ScrollProgress`, `SectionGlow`.
+Legacy `components/ui/primitives.tsx` keeps its API but renders on the new system.
 
-**Not used, and why:** originkit.dev (repo is only a plugin that fetches components behind an API key), animmasterlib.dev (paid pack), animos.app and swishy.ai (video-export tools, not UI libraries).
-Three vendored files have small, commented modifications (see notices).
+## Screens
+- **Landing:** WebGL aurora hero with a 3D resume that scores itself, scroll-story "How it works", interactive feature bento, privacy flow, stats, FAQ accordion, closing CTA.
+- **Auth:** aurora split layout, glass card, floating-label fields, password strength meter, animated confirmation.
+- **App shell:** collapsible floating glass sidebar (gliding active pill, primary "New resume", ⌘K search, notifications, account), mobile top bar + 5-slot dock + swipe-down sheet, page transitions.
+- **Command palette, notifications, toasts, AI coach drawer:** glass, spring motion, Lucide icons instead of emoji, full keyboard support.
+- **Dashboard:** "next best step" card with progress to the 70-point line, live stat counters, tilt resume cards, illustrated empty state.
+- **Upload / Build:** 3-step journey, custom drag-and-drop zone, progress ring; build wizard with sliding steps and sticky nav.
+- **Resume editor:** glass header with score ring, sliding tab rail (arrow-key navigation), animated tab panels, restyled score hero and collapsible section rows. All other tabs pick up the new surfaces.
+- **Jobs / Analytics / Settings / Interview / Share page:** restyled on the same system; jobs board scrolls horizontally with snap on small screens.
 
-## New packages
-`motion`, `@number-flow/react`, `@visx/{curve,event,grid,group,responsive,scale,shape}`, `d3-array`, `d3-shape`, `react-use-measure` (+ `@types/d3-*`). Run `npm install`.
+## Verified
+`next build` (type-check) passes; ESLint reports no new problems (remaining ones are pre-existing, in vendored files and API routes). Screens were checked with headless Chromium at 1440×900 and 390×844 using a mock-data preview harness that is not shipped. Real Supabase sign-in, upload → score → tailor, share links and export still need a manual click-through.
 
-## What changed on screen
-- **Landing:** WebGL aurora behind the hero, hand-drawn marker highlight on the headline, word-blur-in copy, rotating audience pill, star-border CTA with magnetic pull, cursor spark on click, live Bklit gauge + radar demo, provider marquee that reacts to scroll speed, scroll-driven text reveal, count-up stats, spotlight bento tiles, activity graph, FAQ.
-- **Login / signup:** split layout, interactive flowing-line canvas, floating-label inputs.
-- **Dashboard + sidebar:** animated title, count-up stats with a sparkline, spotlight cards with score rings, hold-to-delete, gliding nav highlight.
-- **Resume editor:** pill tabs with a sliding indicator; Bklit gauge + radar; Kokonut agent-style loader (live timer and log lines) while scoring.
-- **Analytics:** Bklit area chart with tooltip, contribution graph, count-up stats.
-- **Upload:** Kokonut drop zone → real 3-step progress.
-- Responsive: mobile drawer nav, single-column bento, scrollable tabs. Motion respects `prefers-reduced-motion` where the libraries support it.
+## Unused files you can delete
+These are no longer imported anywhere (drag-and-drop can't remove them, and they are harmless if left):
+`src/components/landing/HeroDemo.tsx`; in `src/components/vendor/` — `kokonut/{smooth-tab,file-upload,background-paths,marker-text}.tsx`, `smoothui/{float-input,faq-1,scroll-reveal-paragraph}.tsx`, `unlumen/highlight.tsx`, `react-bits/{ShinyText,BlurText,Magnet,ScrollVelocity,StarBorder,RotatingText}.tsx`.
 
-## How I checked it
-I installed dependencies in a scratch copy, ran a real `next build` (type-check included), served it, and took screenshots with headless Chromium at desktop and mobile widths. For logged-in screens I used a preview harness with mock data (not shipped). This caught several bugs I fixed: server→client function props, radar label clipping, aurora colour, FAQ background, marquee rows, mobile grid overflow, Bklit's out-of-date docs vs. its real types.
-
-**Not covered:** I haven't clicked through the real authenticated flows against Supabase, so test sign-in, upload → score → tailor, share links and export yourself. Pages I didn't redesign (jobs, settings, build, interview, cover letter, history, ATS tab) keep their layout but pick up the new colours and fonts.
-
-## Tips
-- WebGL aurora and canvas paths are the heaviest effects. To tone them down, remove `SoftAurora` from `src/app/page.tsx` or lower `count` on `BackgroundPaths` in `AuthShell`.
+## Performance (smooth on mid-range and low-end devices)
+- **Effects are earned, not assumed.** Every device starts on the light tier. Heavy effects (WebGL aurora, cursor glow, card tilt, drifting light, frosted overlays) switch on only if the device looks capable *and* holds ≥50fps in a 1-second probe after the page settles. A watchdog keeps sampling every 10s and drops back to light if it struggles; that choice is remembered for 7 days. Logic: `src/lib/motion-governor.ts` (unit-tested), wiring: `MotionTier.tsx`.
+- **No GPU-heavy layers.** Backdrop blur only on things that float over content (nav, menus, dialogs, toasts, dock) and only on the full tier; cards use a translucent fill instead. The aurora and section glows no longer use `filter: blur()` or blend modes; the film grain no longer blends.
+- **Light tier** also stops beams, shimmer and drifting light, and uses entrances without animated blur.
+- **Nothing runs off-screen.** The hero demo and the cover-letter typing only tick while visible; the hero scan beam and keyword bar animate transforms, not layout. Far-down sections use `content-visibility: auto`. App screens use a static background light.

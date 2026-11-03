@@ -100,15 +100,15 @@ export default function InterviewPrepPage() {
   )
 
   return (
-    <div className="mx-auto px-8 py-8 max-w-4xl fade-in">
+    <div className="mx-auto px-4 py-8 sm:px-8 sm:py-10 max-w-4xl fade-in">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.push('/jobs')} className="text-slate-500 hover:text-slate-300 transition-colors">
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <MessageSquare size={20} className="text-violet-400" />Interview Prep
+          <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-white">
+            <span className="grid size-11 place-items-center rounded-2xl bg-violet-500/15 text-violet-200"><MessageSquare size={20}/></span>Interview Prep
           </h1>
           {job && <p className="text-slate-400 text-sm mt-0.5">{job.role} @ {job.company}</p>}
         </div>
@@ -120,7 +120,7 @@ export default function InterviewPrepPage() {
           <div>
             <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">Resume to use</label>
             <select value={selectedResume} onChange={e => setSelectedResume(e.target.value)}
-              className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50">
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]">
               {resumes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </div>
@@ -135,7 +135,7 @@ export default function InterviewPrepPage() {
           <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">Job Description</label>
           <textarea rows={5} value={jd} onChange={e => setJd(e.target.value)}
             placeholder="Paste the full job description here…"
-            className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none" />
+            className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] resize-none" />
         </div>
       </Card>
 
@@ -205,7 +205,7 @@ export default function InterviewPrepPage() {
               <div className="flex gap-1">
                 {(['all', 'behavioral', 'technical', 'situational', 'culture'] as const).map(t => (
                   <button key={t} onClick={() => setFilter(t)}
-                    className={cn('px-2.5 py-1 rounded-lg text-xs font-medium transition-all capitalize',
+                    className={cn('px-2.5 py-1 rounded-xl text-xs font-medium transition-all capitalize',
                       filterType === t ? 'bg-violet-600 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5')}>
                     {t}
                   </button>
@@ -217,10 +217,10 @@ export default function InterviewPrepPage() {
               {filteredQ.map((q) => (
                 <div key={q.id}
                   className={cn('border rounded-xl overflow-hidden transition-all',
-                    q.checked ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/7 bg-[#16181b]')}>
+                    q.checked ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/[0.08] bg-white/[0.035] backdrop-blur-xl')}>
                   <div className="flex items-start gap-3 px-4 py-3 cursor-pointer"
                     onClick={() => setExpanded(expanded === q.id ? null : q.id)}>
-                    <button className={cn('mt-0.5 shrink-0', q.checked ? 'text-emerald-400' : 'text-slate-600')}
+                    <button className={cn('mt-0.5 shrink-0', q.checked ? 'text-emerald-400' : 'text-slate-500')}
                       onClick={e => { e.stopPropagation(); toggleCheck(q.id) }}>
                       {q.checked ? <CheckSquare size={16} /> : <Square size={16} />}
                     </button>
@@ -236,8 +236,8 @@ export default function InterviewPrepPage() {
                   </div>
 
                   {expanded === q.id && (
-                    <div className="px-4 pb-4 border-t border-white/7 pt-3 space-y-3 fade-in">
-                      <div className="bg-violet-500/8 border border-violet-500/15 rounded-lg px-3 py-2.5">
+                    <div className="px-4 pb-4 border-t border-white/[0.08] pt-3 space-y-3 fade-in">
+                      <div className="bg-violet-500/10 border border-violet-500/15 rounded-xl px-3 py-2.5">
                         <p className="text-xs font-mono text-violet-400 mb-1.5">Model Answer</p>
                         <p className="text-sm text-slate-300 leading-relaxed">{q.modelAnswer}</p>
                       </div>

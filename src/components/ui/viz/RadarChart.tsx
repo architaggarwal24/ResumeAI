@@ -44,10 +44,10 @@ export function RadarChart({ data, size = 240, className }: {
         opacity: ready ? 1 : 0,
         transition: 'transform .9s cubic-bezier(.3,.8,.2,1), opacity .6s ease',
       }}>
-        <polygon points={poly(i => data[i].value)} fill="rgba(60,201,174,0.18)" stroke="#3cc9ae" strokeWidth="1.8" strokeLinejoin="round" />
+        <polygon points={poly(i => data[i].value)} fill="rgba(139,92,246,0.18)" stroke="#8b5cf6" strokeWidth="1.8" strokeLinejoin="round" />
         {data.map((d, i) => {
           const [x, y] = pt(i, d.value)
-          return <circle key={d.label} cx={x} cy={y} r="3.2" fill="#0b0c0d" stroke="#72e0c8" strokeWidth="1.6"><title>{`${d.label}: ${d.value}`}</title></circle>
+          return <circle key={d.label} cx={x} cy={y} r="3.2" fill="#0b0c0d" stroke="#a78bfa" strokeWidth="1.6"><title>{`${d.label}: ${d.value}`}</title></circle>
         })}
       </g>
       {/* labels */}

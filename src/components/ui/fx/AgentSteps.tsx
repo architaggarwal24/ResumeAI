@@ -24,7 +24,7 @@ export function AgentSteps({ steps, running = true, activeIndex, intervalMs = 24
   const active = Math.max(0, Math.min(activeIndex ?? auto, steps.length - 1))
 
   return (
-    <div role="status" aria-live="polite" className={cn('rounded-xl border border-white/8 bg-[#111214] p-4', className)}>
+    <div role="status" aria-live="polite" className={cn('rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-4', className)}>
       <span className="sr-only">{steps[active]}</span>
       <ol className="space-y-0">
         {steps.map((label, i) => {

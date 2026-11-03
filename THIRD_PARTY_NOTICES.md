@@ -166,3 +166,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Fonts — Space Grotesk and JetBrains Mono (SIL Open Font License 1.1)
+
+`src/app/fonts/SpaceGrotesk-Variable.woff2` — Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk).
+`src/app/fonts/JetBrainsMono-Variable.woff2` — Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono).
+
+Both are latin-subset variable builds from Fontsource, self-hosted with `next/font/local`.
+They are licensed under the SIL Open Font License, Version 1.1: https://openfontlicense.org

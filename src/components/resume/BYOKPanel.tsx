@@ -77,7 +77,7 @@ export function BYOKPanel() {
       </div>
 
       {/* Provider tabs */}
-      <div className="flex gap-1 p-1 bg-[#0b0c0d] rounded-lg mb-4 overflow-x-auto">
+      <div className="flex gap-1 p-1 bg-ink rounded-xl mb-4 overflow-x-auto">
         {(Object.keys(PROVIDERS) as LLMProvider[]).map(id => (
           <button key={id}
             className={cn(
@@ -102,7 +102,7 @@ export function BYOKPanel() {
               value={byokCreds.apiKey}
               onChange={e => { setApiKey(e.target.value); setTestResult(null); setTestError('') }}
               placeholder={cfg.placeholder}
-              className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] pr-9"
             />
             <button onClick={() => setShowKey(v => !v)}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
@@ -110,7 +110,7 @@ export function BYOKPanel() {
             </button>
           </div>
 
-          <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
+          <p className="text-xs text-slate-500 mt-1">{cfg.hint}</p>
         </div>
 
         {/* Model + custom model */}
@@ -127,7 +127,7 @@ export function BYOKPanel() {
                 setTestResult(null)
               }
             }}
-            className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 mb-2"
+            className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] mb-2"
           >
             {cfg.models.map(m => <option key={m} value={m}>{m}</option>)}
             {isCustomModel && (
@@ -145,14 +145,14 @@ export function BYOKPanel() {
                 onKeyDown={e => e.key === 'Enter' && applyCustomModel()}
                 placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. nvidia/nemotron-3-nano-30b-a3b' : 'model ID'}
                 autoFocus
-                className="flex-1 bg-[#1c1f23] border border-violet-500/40 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/70"
+                className="flex-1 bg-white/[0.04] border border-violet-500/40 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-500/70"
               />
               <button onClick={applyCustomModel}
-                className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-lg transition-colors">
+                className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-xl transition-colors">
                 Use
               </button>
               <button onClick={() => setShowCustom(false)}
-                className="px-2 py-1.5 bg-white/5 hover:bg-white/10 text-slate-400 text-xs rounded-lg transition-colors">
+                className="px-2 py-1.5 bg-white/5 hover:bg-white/10 text-slate-400 text-xs rounded-xl transition-colors">
                 ✕
               </button>
             </div>
@@ -171,7 +171,7 @@ export function BYOKPanel() {
               onClick={testConnection}
               disabled={!byokCreds.apiKey || testing}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border',
                 'bg-transparent border-white/10 text-slate-300 hover:bg-white/5 hover:border-white/20',
                 'disabled:opacity-40 disabled:cursor-not-allowed'
               )}
@@ -205,13 +205,13 @@ export function BYOKPanel() {
 
           {/* Error detail */}
           {testResult === 'fail' && testError && (
-            <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-red-500/10 border border-red-500/20 rounded-xl">
               <AlertCircle size={12} className="text-red-400 mt-0.5 shrink-0"/>
               <p className="text-xs text-red-300 leading-snug">{testError}</p>
             </div>
           )}
           {jsonResult === 'fail' && jsonError && (
-            <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
               <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0"/>
               <p className="text-xs text-amber-300 leading-snug">
                 Connected, but this model didn&apos;t return valid JSON — scoring, suggestions, and the AI coach&apos;s edit proposals may fail. {jsonError}

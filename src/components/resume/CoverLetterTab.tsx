@@ -36,7 +36,7 @@ export function CoverLetterTab({ resumeId }: { resumeId: string }) {
       if (!res.ok) throw new Error(data.error)
       setContent(data.content)
       setSubject(data.subjectLine)
-      addToast('Cover letter generated ✓', 'success')
+      addToast('Cover letter generated', 'success')
     } catch (err) {
       addToast(err instanceof Error ? err.message : 'Generation failed', 'error')
     }
@@ -57,10 +57,10 @@ export function CoverLetterTab({ resumeId }: { resumeId: string }) {
   }
 
   return (
-    <div className="mx-auto px-6 py-6 max-w-3xl">
+    <div className="mx-auto px-4 py-6 sm:px-6 max-w-3xl">
       <div className="flex items-center gap-2 mb-6">
         <FileText size={16} className="text-violet-400" />
-        <h2 className="font-bold text-lg">Cover Letter Generator</h2>
+        <h2 className="text-2xl font-semibold tracking-tight text-white">Cover Letter Generator</h2>
       </div>
 
       {/* Tone */}
@@ -72,10 +72,10 @@ export function CoverLetterTab({ resumeId }: { resumeId: string }) {
               key={t.id}
               onClick={() => setTone(t.id)}
               className={cn(
-                'p-3 rounded-lg border text-left transition-all',
+                'p-3 rounded-xl border text-left transition-all',
                 tone === t.id
                   ? 'border-violet-500 bg-violet-500/10 text-violet-300'
-                  : 'border-white/8 bg-[#16181b] text-slate-400 hover:border-white/15 hover:text-slate-300'
+                  : 'border-white/10 bg-white/[0.035] backdrop-blur-xl text-slate-400 hover:border-white/15 hover:text-slate-300'
               )}
             >
               <p className="text-xs font-semibold mb-0.5">{t.label}</p>
@@ -93,7 +93,7 @@ export function CoverLetterTab({ resumeId }: { resumeId: string }) {
           value={localJD}
           onChange={e => setLocalJD(e.target.value)}
           placeholder="Paste the job description here…"
-          className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3"
+          className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] resize-none mb-3"
         />
         <Button variant="primary" onClick={generate} loading={generating} disabled={!localJD.trim()}>
           <Sparkles size={13} />
@@ -105,14 +105,14 @@ export function CoverLetterTab({ resumeId }: { resumeId: string }) {
       {content && (
         <div className="fade-in space-y-4">
           {subjectLine && (
-            <div className="bg-violet-500/8 border border-violet-500/20 rounded-lg px-4 py-3">
+            <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3">
               <p className="text-xs font-mono text-violet-400 mb-1">Email Subject Line</p>
               <p className="text-sm font-medium text-slate-200">{subjectLine}</p>
             </div>
           )}
 
           <Card className="p-0">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/7">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
               <p className="text-xs font-mono text-slate-500">Cover Letter</p>
               <div className="flex gap-2">
                 <Button size="sm" onClick={copyContent}><Copy size={12} />Copy</Button>
@@ -127,7 +127,7 @@ export function CoverLetterTab({ resumeId }: { resumeId: string }) {
             />
           </Card>
 
-          <p className="text-xs text-slate-600 text-center">You can edit the letter directly above before copying or downloading.</p>
+          <p className="text-xs text-slate-500 text-center">You can edit the letter directly above before copying or downloading.</p>
         </div>
       )}
     </div>

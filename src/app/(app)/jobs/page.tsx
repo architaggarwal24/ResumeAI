@@ -13,7 +13,7 @@ const COLUMNS: { id: JobStatus; label: string; color: string; bg: string }[] = [
   { id: 'saved',        label: 'Saved',        color: 'text-slate-400',   bg: 'bg-slate-400/10 border-slate-400/20'   },
   { id: 'applied',      label: 'Applied',      color: 'text-blue-400',    bg: 'bg-blue-400/10 border-blue-400/20'     },
   { id: 'interviewing', label: 'Interviewing', color: 'text-violet-400',  bg: 'bg-violet-400/10 border-violet-400/20' },
-  { id: 'offer',        label: 'Offer 🎉',     color: 'text-emerald-400', bg: 'bg-emerald-400/10 border-emerald-400/20'},
+  { id: 'offer',        label: 'Offer',     color: 'text-emerald-400', bg: 'bg-emerald-400/10 border-emerald-400/20'},
   { id: 'rejected',     label: 'Rejected',     color: 'text-red-400',     bg: 'bg-red-400/10 border-red-400/20'       },
 ]
 
@@ -120,20 +120,20 @@ export default function JobsPage() {
   const byStatus = (s: JobStatus) => jobs.filter(j => j.status === s)
 
   if (loading) return (
-    <div className="p-8">
-      <div className="h-8 w-48 bg-white/5 rounded-lg animate-pulse mb-6"/>
-      <div className="grid grid-cols-5 gap-4">
-        {COLUMNS.map(c => <div key={c.id} className="h-64 bg-white/5 rounded-xl animate-pulse"/>)}
+    <div className="p-4 sm:p-8">
+      <div className="skeleton mb-6 h-10 w-56 rounded-2xl"/>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {COLUMNS.map(c => <div key={c.id} className="skeleton h-64 rounded-3xl"/>)}
       </div>
     </div>
   )
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-8 py-8 fade-in flex flex-col" style={{minHeight:"calc(100vh - 0px)"}}>
-      <div className="flex items-center justify-between mb-6 shrink-0">
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col px-4 py-8 sm:px-8 sm:py-10" style={{minHeight:"calc(100vh - 0px)"}}>
+      <div className="mb-6 flex shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Briefcase size={20} className="text-violet-400"/>Job Tracker
+          <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-white">
+            <span className="grid size-11 place-items-center rounded-2xl bg-violet-500/15 text-violet-200"><Briefcase size={20}/></span>Job tracker
           </h1>
           <p className="text-slate-400 text-sm mt-0.5">
             {jobs.length} application{jobs.length !== 1 ? 's' : ''}
@@ -141,30 +141,30 @@ export default function JobsPage() {
           </p>
         </div>
         <Button variant="primary" onClick={() => { setAddingTo('saved'); setForm(EMPTY) }}>
-          <Plus size={14}/>Add Job
+          <Plus size={14}/>Add job
         </Button>
       </div>
 
       {/* Board */}
-      <div className="grid grid-cols-5 gap-3 flex-1 min-h-0">
+      <div className="-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0 lg:grid lg:grid-cols-5 lg:overflow-visible">
         {COLUMNS.map(col => {
           const colJobs = byStatus(col.id)
           return (
             <div key={col.id}
-              className={cn('flex flex-col rounded-xl border transition-all',
-                dragOver===col.id ? 'border-violet-500/40 bg-violet-500/5' : 'border-white/7 bg-[#111214]')}
+              className={cn('glass flex w-[78vw] max-w-[300px] shrink-0 snap-start flex-col rounded-3xl transition-[border-color,background-color,box-shadow] duration-300 lg:w-auto lg:max-w-none',
+                dragOver===col.id && 'border-violet-300/50 bg-violet-500/10 shadow-[0_0_40px_-10px_rgba(139,92,246,.8)]')}
               onDragOver={e => { e.preventDefault(); setDragOver(col.id) }}
               onDragLeave={() => setDragOver(null)}
               onDrop={e => onDrop(e, col.id)}>
               {/* Column header */}
-              <div className="px-3 py-2.5 border-b border-white/7 shrink-0">
+              <div className="shrink-0 border-b border-white/[0.07] px-4 py-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className={cn('text-xs font-semibold', col.color)}>{col.label}</span>
+                    <span aria-hidden className={cn('size-2 rounded-full bg-current', col.color)} /><span className="text-sm font-semibold text-white">{col.label}</span>
                     <span className={cn('text-xs font-mono px-1.5 py-0.5 rounded-full border', col.bg)}>{colJobs.length}</span>
                   </div>
-                  <button onClick={() => { setAddingTo(col.id); setForm(EMPTY) }} className="text-slate-600 hover:text-slate-300 transition-colors">
-                    <Plus size={13}/>
+                  <button type="button" aria-label={`Add job to ${col.label}`} onClick={() => { setAddingTo(col.id); setForm(EMPTY) }} className="press grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/[0.07] hover:text-white">
+                    <Plus size={15}/>
                   </button>
                 </div>
               </div>
@@ -173,30 +173,30 @@ export default function JobsPage() {
               <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
                 {/* Inline add form */}
                 {addingTo === col.id && (
-                  <div className="bg-[#1c1f23] border border-violet-500/30 rounded-xl p-3 space-y-2 fade-in">
+                  <div className="bg-white/[0.04] border border-violet-500/30 rounded-xl p-3 space-y-2 fade-in">
                     <input value={form.company} onChange={e=>setForm(p=>({...p,company:e.target.value}))} placeholder="Company *" autoFocus
-                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"/>
                     <input value={form.role} onChange={e=>setForm(p=>({...p,role:e.target.value}))} placeholder="Role *"
-                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"/>
                     <input value={form.url} onChange={e=>setForm(p=>({...p,url:e.target.value}))} placeholder="Job URL"
-                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"/>
                     <input value={form.location} onChange={e=>setForm(p=>({...p,location:e.target.value}))} placeholder="Location"
-                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"/>
                     <div className="grid grid-cols-2 gap-1.5">
                       <input value={form.salaryMin} onChange={e=>setForm(p=>({...p,salaryMin:e.target.value}))} placeholder="Min salary" type="number"
-                        className="bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                        className="bg-white/[0.03] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"/>
                       <input value={form.salaryMax} onChange={e=>setForm(p=>({...p,salaryMax:e.target.value}))} placeholder="Max salary" type="number"
-                        className="bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"/>
+                        className="bg-white/[0.03] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"/>
                     </div>
                     {resumes.length > 0 && (
                       <select value={form.resumeId} onChange={e=>setForm(p=>({...p,resumeId:e.target.value}))}
-                        className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50">
+                        className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]">
                         <option value="">Link resume (optional)</option>
                         {resumes.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
                       </select>
                     )}
                     <textarea value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="Notes…" rows={2}
-                      className="w-full bg-[#111214] border border-white/8 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none"/>
+                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] resize-none"/>
                     <div className="flex gap-1.5">
                       <Button variant="primary" size="sm" onClick={() => addJob(col.id)} loading={saving} disabled={!form.company.trim()||!form.role.trim()}>Add</Button>
                       <Button size="sm" onClick={() => setAddingTo(null)}><X size={12}/></Button>
@@ -205,40 +205,40 @@ export default function JobsPage() {
                 )}
 
                 {colJobs.length === 0 && addingTo !== col.id && (
-                  <p className="text-center text-xs text-slate-700 py-6">Drop cards here</p>
+                  <div className="m-1 rounded-2xl border border-dashed border-white/10 py-8 text-center text-xs text-slate-500">Drop cards here</div>
                 )}
 
                 {colJobs.map(job => (
                   <div key={job.id} draggable onDragStart={e => { setDragging(job.id); e.dataTransfer.effectAllowed='move' }}
-                    className={cn('bg-[#16181b] border border-white/7 rounded-xl p-3 cursor-grab active:cursor-grabbing transition-all group hover:border-white/15 hover:shadow-md hover:shadow-black/20',
+                    className={cn('group cursor-grab rounded-2xl border border-white/[0.08] bg-white/[0.045] p-3 transition-[transform,border-color,box-shadow,opacity] duration-200 hover:-translate-y-0.5 hover:border-violet-300/25 hover:shadow-[0_14px_30px_-16px_rgba(139,92,246,.6)] active:cursor-grabbing',
                       dragging===job.id && 'opacity-40 scale-95')}>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex items-start gap-1.5 min-w-0">
-                        <GripVertical size={11} className="text-slate-700 mt-0.5 shrink-0 group-hover:text-slate-500"/>
+                        <GripVertical size={12} className="mt-0.5 shrink-0 text-slate-600 group-hover:text-slate-400"/>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold truncate leading-tight">{job.company}</p>
                           <p className="text-xs text-slate-400 truncate">{job.role}</p>
                         </div>
                       </div>
                       <div className="relative shrink-0">
-                        <button onClick={e=>{e.stopPropagation();setMenuOpen(menuOpen===job.id?null:job.id)}} className="text-slate-600 hover:text-slate-300 p-0.5 rounded">
+                        <button type="button" aria-label="Job actions" aria-expanded={menuOpen===job.id} onClick={e=>{e.stopPropagation();setMenuOpen(menuOpen===job.id?null:job.id)}} className="press grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-white/[0.07] hover:text-white">
                           <MoreHorizontal size={13}/>
                         </button>
                         {menuOpen===job.id && (
-                          <div className="absolute right-0 top-6 bg-[#1c1f23] border border-white/10 rounded-xl shadow-xl z-20 py-1 w-44 fade-in" onClick={e=>e.stopPropagation()}>
-                            <button onClick={()=>{setEditing(job);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><Edit2 size={11}/>Edit</button>
-                            {safeHttpUrl(job.url) && <a href={safeHttpUrl(job.url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><ExternalLink size={11}/>View Posting</a>}
-                            {job.resume_id && <button onClick={()=>{router.push(`/resume/${job.resume_id}`);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><FileText size={11}/>Open Resume</button>}
-                            <button onClick={()=>{tailorResume(job);setMenuOpen(null)}} disabled={tailoring===job.id} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-violet-300 hover:bg-violet-500/10 disabled:opacity-50"><Wand2 size={11}/>{tailoring===job.id?'Tailoring…':'Tailor Resume'}</button>
-                            <button onClick={()=>{router.push(`/interview/${job.id}`);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><MessageSquare size={11}/>Interview Prep</button>
-                            <div className="border-t border-white/8 my-1"/>
+                          <div className="glass-strong absolute right-0 top-9 z-20 w-52 rounded-2xl p-1 fade-in" onClick={e=>e.stopPropagation()}>
+                            <button onClick={()=>{setEditing(job);setMenuOpen(null)}} className="flex min-h-9 items-center gap-2 w-full rounded-xl px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><Edit2 size={11}/>Edit</button>
+                            {safeHttpUrl(job.url) && <a href={safeHttpUrl(job.url)!} target="_blank" rel="noopener noreferrer" className="flex min-h-9 items-center gap-2 w-full rounded-xl px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><ExternalLink size={11}/>View Posting</a>}
+                            {job.resume_id && <button onClick={()=>{router.push(`/resume/${job.resume_id}`);setMenuOpen(null)}} className="flex min-h-9 items-center gap-2 w-full rounded-xl px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><FileText size={11}/>Open Resume</button>}
+                            <button onClick={()=>{tailorResume(job);setMenuOpen(null)}} disabled={tailoring===job.id} className="flex min-h-9 items-center gap-2 w-full rounded-xl px-3 py-2 text-xs text-violet-300 hover:bg-violet-500/10 disabled:opacity-50"><Wand2 size={11}/>{tailoring===job.id?'Tailoring…':'Tailor Resume'}</button>
+                            <button onClick={()=>{router.push(`/interview/${job.id}`);setMenuOpen(null)}} className="flex min-h-9 items-center gap-2 w-full rounded-xl px-3 py-2 text-xs text-slate-300 hover:bg-white/5"><MessageSquare size={11}/>Interview Prep</button>
+                            <div className="border-t border-white/10 my-1"/>
                             {COLUMNS.filter(c=>c.id!==job.status).map(c=>(
-                              <button key={c.id} onClick={()=>{moveJob(job.id,c.id);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-400 hover:bg-white/5">
+                              <button key={c.id} onClick={()=>{moveJob(job.id,c.id);setMenuOpen(null)}} className="flex min-h-9 items-center gap-2 w-full rounded-xl px-3 py-2 text-xs text-slate-400 hover:bg-white/5">
                                 <ChevronDown size={11}/>→ {c.label}
                               </button>
                             ))}
-                            <div className="border-t border-white/8 my-1"/>
-                            <button onClick={()=>{deleteJob(job.id);setMenuOpen(null)}} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-400 hover:bg-red-400/10"><Trash2 size={11}/>Delete</button>
+                            <div className="border-t border-white/10 my-1"/>
+                            <button onClick={()=>{deleteJob(job.id);setMenuOpen(null)}} className="flex min-h-9 items-center gap-2 w-full rounded-xl px-3 py-2 text-xs text-red-400 hover:bg-red-400/10"><Trash2 size={11}/>Delete</button>
                           </div>
                         )}
                       </div>
@@ -248,7 +248,7 @@ export default function JobsPage() {
                       {(job.salary_min||job.salary_max) && <p className="flex items-center gap-1 text-xs text-slate-500"><DollarSign size={9}/>{job.salary_min&&job.salary_max?`${(job.salary_min/1000).toFixed(0)}k–${(job.salary_max/1000).toFixed(0)}k`:job.salary_min?`${(job.salary_min/1000).toFixed(0)}k+`:`up to ${(job.salary_max!/1000).toFixed(0)}k`}</p>}
                       {job.applied_at && <p className="flex items-center gap-1 text-xs text-slate-500"><Calendar size={9}/>Applied {formatDate(job.applied_at)}</p>}
                       {job.resumes && <p className="flex items-center gap-1 text-xs text-violet-400 cursor-pointer hover:text-violet-300" onClick={()=>router.push(`/resume/${job.resumes!.id}`)}><FileText size={9}/>{job.resumes.name}{job.resumes.ats_score!=null&&<span className="font-mono ml-1">{Math.round(job.resumes.ats_score)}</span>}</p>}
-                      {job.notes && <p className="text-xs text-slate-600 italic truncate">{job.notes}</p>}
+                      {job.notes && <p className="text-xs text-slate-500 italic truncate">{job.notes}</p>}
                     </div>
                   </div>
                 ))}
@@ -260,18 +260,18 @@ export default function JobsPage() {
 
       {/* Edit modal */}
       {editingJob && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6" onClick={()=>setEditing(null)}>
-          <div className="bg-[#16181b] border border-white/10 rounded-2xl p-6 w-full max-w-md fade-in shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05040a]/70 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-label="Edit application" onClick={()=>setEditing(null)}>
+          <div className="glass-strong rounded-3xl p-6 w-full max-w-md fade-in" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-lg">Edit Application</h3>
-              <button onClick={()=>setEditing(null)} className="text-slate-500 hover:text-slate-300"><X size={18}/></button>
+              <h3 className="text-xl font-semibold tracking-tight text-white">Edit application</h3>
+              <button type="button" aria-label="Close" onClick={()=>setEditing(null)} className="press grid size-9 place-items-center rounded-xl text-slate-400 hover:bg-white/[0.07] hover:text-white"><X size={18}/></button>
             </div>
             <div className="space-y-3">
               {([['Company','company'],['Role','role'],['Job URL','url'],['Location','location']] as [string,keyof JobWithResume][]).map(([lbl,fld])=>(
                 <div key={fld}>
                   <p className="text-xs font-mono text-slate-500 mb-1 uppercase tracking-wider">{lbl}</p>
                   <input value={(editingJob[fld] as string)||''} onChange={e=>setEditing(p=>p?{...p,[fld]:e.target.value}:p)}
-                    className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"/>
+                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"/>
                 </div>
               ))}
               <div className="grid grid-cols-2 gap-3">
@@ -279,7 +279,7 @@ export default function JobsPage() {
                   <div key={fld}>
                     <p className="text-xs font-mono text-slate-500 mb-1 uppercase tracking-wider">{lbl}</p>
                     <input type="number" value={(editingJob[fld] as number)||''} onChange={e=>setEditing(p=>p?{...p,[fld]:e.target.value?+e.target.value:null}:p)}
-                      className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"/>
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"/>
                   </div>
                 ))}
               </div>
@@ -287,7 +287,7 @@ export default function JobsPage() {
                 <div>
                   <p className="text-xs font-mono text-slate-500 mb-1 uppercase tracking-wider">Linked Resume</p>
                   <select value={editingJob.resume_id||''} onChange={e=>setEditing(p=>p?{...p,resume_id:e.target.value||null}:p)}
-                    className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50">
+                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]">
                     <option value="">No resume linked</option>
                     {resumes.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
@@ -296,11 +296,11 @@ export default function JobsPage() {
               <div>
                 <p className="text-xs font-mono text-slate-500 mb-1 uppercase tracking-wider">Notes</p>
                 <textarea rows={3} value={editingJob.notes||''} onChange={e=>setEditing(p=>p?{...p,notes:e.target.value}:p)}
-                  className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 resize-none"/>
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] resize-none"/>
               </div>
             </div>
             <div className="flex gap-2 mt-5">
-              <Button variant="primary" className="flex-1 justify-center" onClick={saveEdit} loading={saving}>Save Changes</Button>
+              <Button variant="primary" className="flex-1 justify-center" onClick={saveEdit} loading={saving}>Save changes</Button>
               <Button onClick={()=>setEditing(null)}>Cancel</Button>
             </div>
           </div>

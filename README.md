@@ -127,7 +127,7 @@ supabase/migrations/           # SQL schema, RLS policies, and the share-link se
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
    NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
    ```
-   `NEXT_PUBLIC_APP_URL` should be the URL Vercel is about to give you (or your custom domain, once you have one) — a few server routes call themselves internally and need this to know their own address.
+   `NEXT_PUBLIC_APP_URL` should be the URL Vercel is about to give you (or your custom domain, once you have one) — share links and the post-login redirect are built from it rather than from the request's Host header.
 4. Click **Deploy**.
 5. In your Supabase project: **Authentication → URL Configuration → Redirect URLs**, add the Vercel URL from step 3. Skipping this makes login fail in production while working fine locally.
 6. If you add a custom domain later, update both `NEXT_PUBLIC_APP_URL` (redeploy after changing it) and the Supabase redirect URL to match.

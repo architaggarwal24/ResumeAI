@@ -52,13 +52,13 @@ function EditableField({
           {multiline ? (
             <textarea
               rows={4} value={local} onChange={e => setLocal(e.target.value)} autoFocus
-              className="w-full bg-[#1c1f23] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 resize-none"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] resize-none"
             />
           ) : (
             <input
               value={local} onChange={e => setLocal(e.target.value)} autoFocus
               onKeyDown={e => e.key === 'Enter' && save()}
-              className="w-full bg-[#1c1f23] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"
             />
           )}
           <div className="flex gap-2">
@@ -73,20 +73,20 @@ function EditableField({
         <div
           onClick={() => { setLocal(value); setEditing(true) }}
           className={cn(
-            'group relative cursor-pointer px-3 py-2 rounded-lg text-sm transition-colors min-h-[36px]',
-            'bg-[#1c1f23] border border-white/7 hover:border-white/15',
+            'group relative cursor-pointer px-3 py-2 rounded-xl text-sm transition-colors min-h-[36px]',
+            'bg-white/[0.04] border border-white/[0.08] hover:border-white/15',
             dirtyFields.has(id) && 'border-violet-500/30',
           )}
         >
-          <span className={value ? 'text-slate-200' : 'text-slate-600'}>{value || placeholder}</span>
-          <Edit3 size={11} className="absolute right-2 top-2 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <span className={value ? 'text-slate-200' : 'text-slate-500'}>{value || placeholder}</span>
+          <Edit3 size={11} className="absolute right-2 top-2 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
       )}
 
       {/* AI rewrite preview */}
       {rw && (
-        <div className="mt-2 border border-violet-500/25 rounded-lg overflow-hidden">
-          <div className="bg-violet-500/8 px-3 py-1.5 flex items-center justify-between">
+        <div className="mt-2 border border-violet-500/25 rounded-xl overflow-hidden">
+          <div className="bg-violet-500/10 px-3 py-1.5 flex items-center justify-between">
             <span className="text-xs font-mono text-violet-400">✦ AI Rewrite</span>
             <div className="flex gap-1.5">
               <Button variant="success" size="sm" onClick={() => onAcceptRewrite(id, v => { onSave(v); setDirty(p => new Set(p).add(id)) })}>
@@ -191,7 +191,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
       })
       if (!res.ok) throw new Error('Save failed')
       setDirty(new Set())
-      addToast('Saved ✓', 'success')
+      addToast('Saved', 'success')
     } catch {
       addToast('Save failed — try again', 'error')
     }
@@ -221,7 +221,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
     if (!rw) return
     applyFn(rw.rewritten)
     setRewrites(p => { const n = { ...p }; delete n[fieldId]; return n })
-    addToast('Rewrite applied ✓', 'success')
+    addToast('Rewrite applied', 'success')
   }
 
   function dismissRewrite(fieldId: string) {
@@ -238,10 +238,10 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
   }
 
   return (
-    <div className="mx-auto px-6 py-6 max-w-3xl">
+    <div className="mx-auto px-4 py-6 sm:px-6 max-w-3xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-bold text-lg">Resume Editor</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-white">Resume Editor</h2>
           <p className="text-xs text-slate-500 mt-0.5">Click any field to edit · AI Rewrite available in edit mode</p>
         </div>
         <div className="flex items-center gap-2">
@@ -250,7 +250,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
             onClick={() => { undo(); addToast('Undo', 'info', 1500) }}
             disabled={undoPast.length === 0}
             title="Undo (Ctrl+Z)"
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
           >
             <Undo2 size={14} />
           </button>
@@ -258,7 +258,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
             onClick={() => { redo(); addToast('Redo', 'info', 1500) }}
             disabled={undoFuture.length === 0}
             title="Redo (Ctrl+Shift+Z)"
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
           >
             <Redo2 size={14} />
           </button>
@@ -310,13 +310,13 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
       {/* Experience */}
       <SectionBlock title={`Experience (${resumeData.experience?.length ?? 0})`} icon={<Edit3 size={13} className="text-slate-500" />}>
         {resumeData.experience?.map((exp, ei) => (
-          <div key={exp.id || ei} className="mb-6 pb-6 border-b border-white/7 last:border-none last:mb-0 last:pb-0">
+          <div key={exp.id || ei} className="mb-6 pb-6 border-b border-white/[0.08] last:border-none last:mb-0 last:pb-0">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-mono text-slate-500">
                 {exp.title || exp.company ? `${exp.title || 'Untitled role'}${exp.company ? ` · ${exp.company}` : ''}` : `Entry ${ei + 1}`}
               </span>
               <button
-                className="flex items-center gap-1 text-xs text-slate-600 hover:text-red-400 transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-400 transition-colors"
                 onClick={() => {
                   if (!confirm('Remove this entire experience entry? This cannot be undone after saving.')) return
                   updateResumeField(p => ({ ...p, experience: p.experience.filter((_, i) => i !== ei) }))
@@ -363,7 +363,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
                   />
                 </div>
                 <button
-                  className="mt-2 text-slate-600 hover:text-red-400 transition-colors"
+                  className="mt-2 text-slate-500 hover:text-red-400 transition-colors"
                   onClick={() => updateResumeField(p => {
                     const experience = [...p.experience]
                     experience[ei] = { ...experience[ei], bullets: experience[ei].bullets.filter((_, i) => i !== bi) }
@@ -412,10 +412,10 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
                   return { ...p, skills: { ...p.skills, categories } }
                 })}
                 placeholder="Category (e.g. Languages)"
-                className="w-40 bg-[#1c1f23] border border-white/8 rounded-md px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-violet-500/50"
+                className="w-40 bg-white/[0.04] border border-white/10 rounded-md px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"
               />
               <button
-                className="text-slate-600 hover:text-red-400 transition-colors"
+                className="text-slate-500 hover:text-red-400 transition-colors"
                 onClick={() => updateResumeField(p => ({
                   ...p, skills: { ...p.skills, categories: (p.skills?.categories || []).filter((_, i) => i !== ci) }
                 }))}
@@ -431,7 +431,7 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
                 return { ...p, skills: { ...p.skills, categories } }
               })}
               placeholder="skill1, skill2, skill3"
-              className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"
             />
           </div>
         ))}
@@ -448,13 +448,13 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
       {/* Education */}
       <SectionBlock title="Education" icon={<Edit3 size={13} className="text-slate-500" />}>
         {resumeData.education?.map((edu, ei) => (
-          <div key={edu.id || ei} className="mb-4 pb-4 border-b border-white/7 last:border-none last:mb-0 last:pb-0">
+          <div key={edu.id || ei} className="mb-4 pb-4 border-b border-white/[0.08] last:border-none last:mb-0 last:pb-0">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-mono text-slate-500">
                 {edu.institution || edu.degree ? `${edu.institution || 'Untitled'}${edu.degree ? ` · ${edu.degree}` : ''}` : `Entry ${ei + 1}`}
               </span>
               <button
-                className="flex items-center gap-1 text-xs text-slate-600 hover:text-red-400 transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-400 transition-colors"
                 onClick={() => {
                   if (!confirm('Remove this entire education entry? This cannot be undone after saving.')) return
                   updateResumeField(p => ({ ...p, education: p.education.filter((_, i) => i !== ei) }))
@@ -497,11 +497,11 @@ export function EditorTab({ resumeId }: { resumeId: string }) {
       </SectionBlock>
       <SectionBlock title={`Projects (${resumeData.projects?.length ?? 0})`} icon={<Edit3 size={13} className="text-slate-500" />}>
         {resumeData.projects?.map((proj, pi) => (
-          <div key={proj.id || pi} className="mb-4 pb-4 border-b border-white/7 last:border-none last:mb-0 last:pb-0">
+          <div key={proj.id || pi} className="mb-4 pb-4 border-b border-white/[0.08] last:border-none last:mb-0 last:pb-0">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-mono text-slate-500">{proj.name || `Project ${pi + 1}`}</span>
               <button
-                className="flex items-center gap-1 text-xs text-slate-600 hover:text-red-400 transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-400 transition-colors"
                 onClick={() => {
                   if (!confirm('Remove this entire project? This cannot be undone after saving.')) return
                   updateResumeField(p => ({ ...p, projects: p.projects.filter((_, i) => i !== pi) }))

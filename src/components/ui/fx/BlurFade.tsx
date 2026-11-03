@@ -18,7 +18,7 @@ export function BlurFade({ children, delay = 0, className, as: Tag = 'div' }: {
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (typeof IntersectionObserver === 'undefined') { setShown(true); return }
+    if (typeof IntersectionObserver === 'undefined') { queueMicrotask(() => setShown(true)); return }
     const io = new IntersectionObserver(entries => {
       if (entries.some(e => e.isIntersecting)) { setShown(true); io.disconnect() }
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' })

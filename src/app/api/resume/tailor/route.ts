@@ -6,6 +6,7 @@ import { validateCreds } from '@/lib/llm/validate'
 import { TAILOR_PROMPT } from '@/lib/llm/prompts'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
 import { getAuthedUser, unauthorized, limit, limiters, parseBody, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { isLimitReached } from '@/lib/security/caps'
 
 // 60s is the max the Hobby plan allows; raise on Pro/Enterprise if needed.
 export const maxDuration = 60
@@ -78,6 +79,9 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
+    if (isLimitReached(error)) {
+      return NextResponse.json({ error: 'Resume limit reached (200). Delete some to add more.' }, { status: 409 })
+    }
     if (error) throw error
 
     // Link to job application if provided (scoped to this user)

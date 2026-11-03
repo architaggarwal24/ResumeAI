@@ -1,6 +1,7 @@
 // src/app/api/resume/[id]/versions/[versionId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthedUser, unauthorized, limit, limiters, ownsResume, isUuid } from '@/lib/security/guards'
+import { isLimitReached } from '@/lib/security/caps'
 
 type Params = { params: Promise<{ id: string; versionId: string }> }
 
@@ -46,12 +47,15 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const { data: current } = await supabase
       .from('resumes').select('parsed_data, ats_score').eq('id', id).eq('user_id', user.id).single()
     if (current) {
-      await supabase.from('resume_versions').insert({
+      // The safety snapshot must succeed before we overwrite the resume.
+      const { error: snapErr } = await supabase.from('resume_versions').insert({
         resume_id: id,
         label: `Before restore to "${String(version.label).slice(0, 150)}"`,
         parsed_data: current.parsed_data,
         ats_score: current.ats_score,
       })
+      if (isLimitReached(snapErr)) return NextResponse.json({ error: 'Snapshot limit reached (100). Delete old snapshots before restoring, so your current version can be saved first.' }, { status: 409 })
+      if (snapErr) throw snapErr
     }
 
     const { data: updated, error } = await supabase

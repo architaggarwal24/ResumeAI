@@ -2,7 +2,9 @@
 import './globals.css'
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { StoreHydrator } from '@/components/ui/StoreHydrator'
-import type { Metadata } from 'next'
+import { MotionProvider } from '@/components/ui/glass/MotionTier'
+import { fontSans, fontMono } from './fonts'
+import type { Metadata, Viewport } from 'next'
 
 const title = 'ResumeAI — Resume Intelligence Platform'
 const description = 'Upload your resume, get section-level scoring, inline editing, AI rewrites, ATS optimization, and template switching.'
@@ -17,13 +19,21 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', title, description },
 }
 
+export const viewport: Viewport = {
+  themeColor: '#07080a',
+  colorScheme: 'dark',
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-[#0b0c0d] text-slate-100 antialiased font-sans">
-        <StoreHydrator />
-        {children}
-        <ToastContainer />
+    <html lang="en" className={`dark ${fontSans.variable} ${fontMono.variable}`} data-motion="lite">
+      <body className="bg-ink font-sans text-slate-100 antialiased">
+        <MotionProvider>
+          <StoreHydrator />
+          {children}
+          <ToastContainer />
+        </MotionProvider>
+        <div aria-hidden className="grain" />
       </body>
     </html>
   )

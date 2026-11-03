@@ -12,8 +12,10 @@ import { SectionSuggestion } from './SectionSuggestion'
 import {
   RefreshCw, TrendingUp, AlertTriangle, CheckCircle, User,
   FileText, Briefcase, Wrench, GraduationCap, FolderGit2, ChevronDown,
-  Undo2, Redo2, X, Sparkles, Check, Download,
+  Undo2, Redo2, X, Sparkles, Check, Download, Lightbulb, KeyRound,
 } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { SPRING } from '@/lib/motion'
 import { scoreColor, cn, generateId } from '@/lib/utils'
 import { applyResumeEdit } from '@/lib/resumeEdits'
 import type { AnalysisResult, Strength, GenerateSectionResult, GeneratableSection, SectionImproveResult } from '@/types/resume'
@@ -301,18 +303,19 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
     : []
 
   return (
-    <div className="mx-auto px-6 py-6 max-w-3xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-bold text-lg">Resume Analysis</h2>
-          <p className="text-xs text-slate-600 mt-0.5">Scores may vary ±5 pts between runs — LLMs are non-deterministic by nature</p>
+          <h2 className="text-2xl font-semibold tracking-tight text-white">Resume analysis</h2>
+          <p className="mt-1 text-xs text-slate-500">Scores may vary ±5 pts between runs — LLMs are non-deterministic by nature</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => { undo(); addToast('Undo', 'info', 1500) }}
             disabled={undoPast.length === 0}
             title="Undo (Ctrl+Z)"
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            aria-label="Undo"
+            className="press grid size-9 place-items-center rounded-xl text-slate-400 hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
           >
             <Undo2 size={14} />
           </button>
@@ -320,12 +323,13 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
             onClick={() => { redo(); addToast('Redo', 'info', 1500) }}
             disabled={undoFuture.length === 0}
             title="Redo (Ctrl+Shift+Z)"
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            aria-label="Redo"
+            className="press grid size-9 place-items-center rounded-xl text-slate-400 hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
           >
             <Redo2 size={14} />
           </button>
           <div className="w-px h-4 bg-white/10" />
-          <Button onClick={runScoring} loading={isLoading} size="sm">
+          <Button onClick={runScoring} loading={isLoading} variant="primary">
             <RefreshCw size={13} />
             {isLoading ? 'Analyzing…' : 'Re-analyze'}
           </Button>
@@ -334,8 +338,8 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
 
       {/* ─── Stale-analysis banner ─────────────────────────────────────── */}
       {isStale && !isLoading && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
-          <AlertTriangle size={15} className="text-amber-400 shrink-0" />
+        <div className="glass mb-4 flex flex-wrap items-center gap-3 rounded-2xl border-amber-300/25 px-4 py-3 sm:flex-nowrap">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-amber-300/15 text-amber-200"><AlertTriangle size={16} /></span>
           <div className="flex-1 min-w-0">
             <p className="text-sm text-amber-300 font-medium leading-none mb-0.5">Resume changed since last analysis</p>
             <p className="text-xs text-amber-400/70">These scores reflect an earlier version of your resume.</p>
@@ -343,13 +347,13 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
           <button
             onClick={quickDownload}
             disabled={downloading}
-            className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             <Download size={12} />{downloading ? 'Downloading…' : 'Download PDF'}
           </button>
           <button
             onClick={runScoring}
-            className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/25 transition-colors"
+            className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 text-violet-100 border border-violet-300/30 transition-colors"
           >
             Re-analyze now
           </button>
@@ -371,16 +375,19 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
       )}
 
       {!analysisResult && !isLoading && !byokCreds.apiKey && (
-        <div className="text-center py-16 text-slate-500">
-          <p className="mb-2">Add your API key to analyze this resume.</p>
-          <p className="text-xs">Go to Upload → or use the BYOK panel.</p>
+        <div className="glass rounded-3xl px-6 py-14 text-center">
+          <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-violet-500/15 text-violet-200"><KeyRound size={22} /></div>
+          <p className="mb-1 text-base font-medium text-white">Add your API key to analyze this resume</p>
+          <p className="text-sm text-slate-400">Open <a href="/settings" className="text-violet-300 underline-offset-4 hover:underline">Settings</a> or the key panel on Upload — it stays in this tab only.</p>
         </div>
       )}
 
       {safeResult && (
         <div className="space-y-4 fade-in">
           {/* ─── Hero: score + verdict in one glance ─────────────────────── */}
-          <div className="bg-[#16181b] border border-white/7 rounded-xl p-5 flex flex-col sm:flex-row items-center gap-6">
+          <div className="glass-strong no-blur relative flex flex-col items-center gap-6 overflow-hidden rounded-3xl p-5 sm:flex-row sm:p-6">
+            <span aria-hidden className="edge" />
+            <div aria-hidden className="pointer-events-none absolute -left-20 -top-20 size-72 rounded-full blur-3xl" style={{ background: `radial-gradient(closest-side, ${scoreHex(safeResult.atsScore)}33, transparent)` }} />
             <div className="h-[190px] w-[240px] shrink-0">
               <Gauge value={Math.round(safeResult.atsScore)} centerValue={Math.round(safeResult.atsScore)} defaultLabel="ATS score" totalNotches={44}
                 useGradient={false} activeFill={scoreHex(safeResult.atsScore)} />
@@ -388,11 +395,11 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
 
             <div className="flex-1 min-w-0 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-1.5 flex-wrap">
-                <span className="text-xs font-mono text-slate-500 uppercase tracking-wider">ATS Score</span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-400">ATS score</span>
                 {safeResult.recruiterVerdict && <VerdictBadge verdict={safeResult.recruiterVerdict.verdict} />}
               </div>
               {safeResult.recruiterVerdict && (
-                <p className="font-display text-lg text-slate-200 leading-snug">{safeResult.recruiterVerdict.headline}</p>
+                <p className="text-balance text-xl font-medium leading-snug text-white">{safeResult.recruiterVerdict.headline}</p>
               )}
             </div>
             {radarData.length >= 3 && (
@@ -400,7 +407,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                 <RadarChart
                   size={250} margin={58}
                   metrics={radarData.map(r => ({ key: r.label, label: r.label.charAt(0).toUpperCase() + r.label.slice(1) }))}
-                  data={[{ label: 'Sections', color: '#3cc9ae', values: Object.fromEntries(radarData.map(r => [r.label, r.value])) }]}
+                  data={[{ label: 'Sections', color: '#8b5cf6', values: Object.fromEntries(radarData.map(r => [r.label, r.value])) }]}
                 >
                   <RadarGrid showLabels={false} />
                   <RadarAxis />
@@ -413,7 +420,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
 
           {/* ─── Section breakdown — compact collapsible rows ────────────── */}
           <div>
-            <p className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-2 px-1">Section Breakdown</p>
+            <p className="mb-3 px-1 font-mono text-[11px] uppercase tracking-[0.18em] text-slate-400">Section breakdown</p>
             <div className="space-y-2">
               {SECTION_ORDER.map(key => {
                 const s = safeResult.sections?.[key]
@@ -435,14 +442,14 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                       </ul>
                     )}
                     {s.quickFix && (
-                      <div className="mb-3 px-3 py-2 bg-violet-500/8 border border-violet-500/15 rounded-lg text-xs text-violet-300">
-                        💡 {s.quickFix}
+                      <div className="mb-3 flex items-start gap-2 rounded-xl border border-fuchsia-300/20 bg-fuchsia-400/[0.07] px-3 py-2.5 text-xs text-fuchsia-100">
+                        <Lightbulb size={14} className="mt-px shrink-0 text-fuchsia-300" />{s.quickFix}
                       </div>
                     )}
 
                     {/* Per-pointer suggestions */}
                     {key === 'summary' && resumeData?.summary?.trim() && (
-                      <div className="pt-2 border-t border-white/7">
+                      <div className="pt-2 border-t border-white/[0.08]">
                         <p className="text-xs text-slate-300 leading-relaxed">{resumeData.summary}</p>
                         <PointerSuggestion
                           resumeId={resumeId}
@@ -455,7 +462,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                       </div>
                     )}
                     {key === 'summary' && isSectionEmpty('summary', resumeData) && (
-                      <div className="pt-2 border-t border-white/7">
+                      <div className="pt-2 border-t border-white/[0.08]">
                         <GenerateSectionBox
                           resumeId={resumeId}
                           section="summary"
@@ -466,7 +473,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                     )}
 
                     {key === 'experience' && (resumeData?.experience?.length ?? 0) > 0 && (
-                      <div className="pt-2 border-t border-white/7 space-y-3.5">
+                      <div className="pt-2 border-t border-white/[0.08] space-y-3.5">
                         {resumeData!.experience.map((exp, ei) => (
                           <div key={exp.id || ei}>
                             <p className="text-xs font-semibold text-slate-300 mb-1.5">
@@ -495,7 +502,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                       </div>
                     )}
                     {key === 'experience' && isSectionEmpty('experience', resumeData) && (
-                      <div className="pt-2 border-t border-white/7">
+                      <div className="pt-2 border-t border-white/[0.08]">
                         <GenerateSectionBox
                           resumeId={resumeId}
                           section="experience"
@@ -506,7 +513,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                     )}
 
                     {key === 'projects' && (resumeData?.projects?.length ?? 0) > 0 && (
-                      <div className="pt-2 border-t border-white/7 space-y-3.5">
+                      <div className="pt-2 border-t border-white/[0.08] space-y-3.5">
                         {resumeData!.projects.map((proj, pi) => (
                           <div key={proj.id || pi}>
                             <p className="text-xs font-semibold text-slate-300 mb-1.5">{proj.name}</p>
@@ -533,7 +540,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                       </div>
                     )}
                     {key === 'projects' && isSectionEmpty('projects', resumeData) && (
-                      <div className="pt-2 border-t border-white/7">
+                      <div className="pt-2 border-t border-white/[0.08]">
                         <GenerateSectionBox
                           resumeId={resumeId}
                           section="projects"
@@ -544,7 +551,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                     )}
 
                     {key === 'education' && isSectionEmpty('education', resumeData) && (
-                      <div className="pt-2 border-t border-white/7">
+                      <div className="pt-2 border-t border-white/[0.08]">
                         <GenerateSectionBox
                           resumeId={resumeId}
                           section="education"
@@ -554,7 +561,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                       </div>
                     )}
                     {key === 'education' && !isSectionEmpty('education', resumeData) && (
-                      <div className="pt-2 border-t border-white/7">
+                      <div className="pt-2 border-t border-white/[0.08]">
                         <SectionSuggestion
                           resumeId={resumeId}
                           section="education"
@@ -565,7 +572,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                     )}
 
                     {key === 'skills' && isSectionEmpty('skills', resumeData) && (
-                      <div className="pt-2 border-t border-white/7">
+                      <div className="pt-2 border-t border-white/[0.08]">
                         <GenerateSectionBox
                           resumeId={resumeId}
                           section="skills"
@@ -575,7 +582,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                       </div>
                     )}
                     {key === 'skills' && !isSectionEmpty('skills', resumeData) && (
-                      <div className="pt-2 border-t border-white/7">
+                      <div className="pt-2 border-t border-white/[0.08]">
                         <SectionSuggestion
                           resumeId={resumeId}
                           section="skills"
@@ -613,8 +620,8 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                   </p>
                   <div className="space-y-2">
                     {safeResult.topFixes.map((fix, i) => (
-                      <div key={i} className="border border-white/7 rounded-xl overflow-hidden bg-[#1c1f23]">
-                        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/7">
+                      <div key={i} className="border border-white/[0.08] rounded-xl overflow-hidden bg-white/[0.04]">
+                        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.08]">
                           <span className={cn('text-xs font-mono font-bold w-4 text-center',
                             fix.impact === 'high' ? 'text-red-400' :
                             fix.impact === 'medium' ? 'text-amber-400' : 'text-slate-400')}>
@@ -638,7 +645,7 @@ export function ScoreTab({ resumeId }: { resumeId: string }) {
                           )}
                         </div>
                         {fix.before && fix.after && (
-                          <div className="px-3 py-2 border-t border-white/7">
+                          <div className="px-3 py-2 border-t border-white/[0.08]">
                             {appliedFixes.has(i) ? (
                               <span className="text-xs text-emerald-400 flex items-center gap-1.5">
                                 <Check size={11} />Applied — review in the Edit tab
@@ -777,25 +784,35 @@ function SectionRow({
   const Icon = meta.icon
 
   return (
-    <div className="border border-white/7 rounded-xl overflow-hidden bg-[#16181b]">
+    <div className={cn('glass overflow-hidden rounded-2xl transition-[border-color] duration-300', open && 'border-violet-300/20')}>
       <button
+        type="button"
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-colors text-left"
+        aria-expanded={open}
+        className="flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
       >
-        <Icon size={15} className="text-slate-500 shrink-0" />
-        <span className="text-sm font-medium text-slate-200 w-24 shrink-0">{meta.label}</span>
-        <div className="flex-1 min-w-0">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/[0.05] text-slate-300"><Icon size={15} /></span>
+        <span className="w-20 shrink-0 text-sm font-medium text-slate-100 sm:w-24">{meta.label}</span>
+        <div className="min-w-0 flex-1">
           <ScoreBar value={score.score} />
         </div>
-        <span className={cn('text-xs font-mono w-10 text-right shrink-0', scoreColor(score.score))}>{score.score}</span>
-        <StrengthBadge strength={score.strength} />
-        <ChevronDown size={15} className={cn('text-slate-500 shrink-0 transition-transform', open && 'rotate-180')} />
+        <span className={cn('w-9 shrink-0 text-right font-mono text-sm font-semibold', scoreColor(score.score))}>{score.score}</span>
+        <span className="hidden sm:inline-flex"><StrengthBadge strength={score.strength} /></span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={SPRING.snappy} className="shrink-0 text-slate-500"><ChevronDown size={16} /></motion.span>
       </button>
-      {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-white/7 fade-in">
-          {children}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ height: SPRING.soft, opacity: { duration: 0.2 } }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-white/[0.07] px-4 pb-4 pt-3">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -804,11 +821,11 @@ function VerdictBadge({ verdict }: { verdict: string }) {
   const styles: Record<string, string> = {
     strong_yes: 'bg-emerald-400/15 text-emerald-300 border-emerald-400/25',
     yes:        'bg-emerald-400/10 text-emerald-400 border-emerald-400/20',
-    maybe:      'bg-amber-400/10 text-amber-400 border-amber-400/20',
-    no:         'bg-red-400/10 text-red-400 border-red-400/20',
+    maybe:      'bg-amber-300/10 text-amber-200 border-amber-300/25',
+    no:         'bg-rose-400/10 text-rose-300 border-rose-400/25',
   }
   const labels: Record<string, string> = {
-    strong_yes: '✓ Strong Yes', yes: '✓ Yes', maybe: '~ Maybe', no: '✗ No'
+    strong_yes: 'Strong yes', yes: 'Yes', maybe: 'Maybe', no: 'No'
   }
   return (
     <span className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono font-semibold border', styles[verdict] || styles['maybe'])}>

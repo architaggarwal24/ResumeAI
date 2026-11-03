@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeResumeData, isTemplateId } from '@/lib/security/resume-schema'
 import { getAuthedUser, unauthorized, limit, limiters, parseBody, MAX_BODY } from '@/lib/security/guards'
+import { isLimitReached } from '@/lib/security/caps'
 
 const MAX_RAW_TEXT = 200_000
 const MAX_RESUMES_PER_USER = 200
@@ -64,6 +65,9 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
+    if (isLimitReached(error)) {
+      return NextResponse.json({ error: `Resume limit reached (${MAX_RESUMES_PER_USER}). Delete some to add more.` }, { status: 409 })
+    }
     if (error) throw error
     return NextResponse.json({ resume: data }, { status: 201 })
   } catch (err) {

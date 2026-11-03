@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createRateLimiter, type RateDecision } from './rate-limit'
 import { readJsonLimited } from './body'
+import { isEmailVerified } from './email-verified'
 
 // Best-effort, per-instance limits (see rate-limit.ts). Tune per deployment.
 export const limiters = {
@@ -25,7 +26,8 @@ export const MAX_BODY = {
 export async function getAuthedUser() {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
-  return { supabase, user: error ? null : user }
+  // Unconfirmed accounts are treated as signed out for every API route.
+  return { supabase, user: error || !isEmailVerified(user) ? null : user }
 }
 
 export const unauthorized = () => NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

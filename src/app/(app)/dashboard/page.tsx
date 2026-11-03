@@ -1,16 +1,15 @@
 // src/app/(app)/dashboard/page.tsx
 export const dynamic = 'force-dynamic'
-import { createClient } from '@/lib/supabase/server'
+import { requireUser } from '@/lib/supabase/require-user'
 import { DashboardView } from '@/components/dashboard/DashboardView'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await requireUser()
 
   const { data: resumes } = await supabase
     .from('resumes')
     .select('id, name, ats_score, template_id, created_at, updated_at')
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
 
   // Recent analysis scores for the sparkline (RLS limits this to the user's own resumes).

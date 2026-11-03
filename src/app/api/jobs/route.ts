@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { safeHttpUrl } from '@/lib/security/url'
 import { getAuthedUser, unauthorized, limit, limiters, parseBody, ownsResume, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { isLimitReached } from '@/lib/security/caps'
 import type { JobStatus } from '@/types/resume'
 
 const JOB_STATUSES: readonly JobStatus[] = ['saved', 'applied', 'interviewing', 'offer', 'rejected', 'withdrawn']
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
       })
       .select().single()
 
+    if (isLimitReached(error)) return NextResponse.json({ error: 'Job limit reached' }, { status: 409 })
     if (error) throw error
     return NextResponse.json({ job: data }, { status: 201 })
   } catch {

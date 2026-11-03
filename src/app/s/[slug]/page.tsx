@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { renderFullHTML } from '@/lib/templates/render'
 import { SharePasswordGate } from '@/components/resume/SharePasswordGate'
+import { Clock } from 'lucide-react'
 import { PrintButton } from '@/components/resume/PrintButton'
 import { sanitizeResumeData, isTemplateId } from '@/lib/security/resume-schema'
 
@@ -46,11 +47,13 @@ export default async function SharePage({ params }: Props) {
   // Check expiry
   if (result.expired) {
     return (
-      <div className="min-h-screen bg-[#0b0c0d] flex items-center justify-center p-8">
-        <div className="text-center">
-          <p className="text-4xl mb-4">⏰</p>
-          <h1 className="text-xl font-bold mb-2 text-slate-200">Link Expired</h1>
-          <p className="text-slate-400 text-sm">This resume share link has expired.</p>
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ink p-6">
+        <div aria-hidden className="aurora-field"><i /><i /><i /></div>
+        <div className="glass-strong relative w-full max-w-sm rounded-3xl p-8 text-center">
+          <span aria-hidden className="edge" />
+          <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-white/[0.06] text-slate-300"><Clock size={24} /></div>
+          <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">Link expired</h1>
+          <p className="text-sm text-slate-400">This resume share link has expired. Ask the owner for a new one.</p>
         </div>
       </div>
     )
@@ -70,23 +73,26 @@ export default async function SharePage({ params }: Props) {
   const html = renderFullHTML(isTemplateId(result.templateId) ? result.templateId : 'classic', resume)
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="relative min-h-screen overflow-x-clip bg-ink print:bg-white">
+      <div aria-hidden className="pointer-events-none fixed inset-0 opacity-70 print:hidden"><div className="aurora-field"><i /><i /><i /></div></div>
       {/* Minimal header bar */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-black/10 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-          <span className="text-sm font-semibold text-gray-700">ResumeAI</span>
-          <span className="text-xs text-gray-400">· Shared Resume</span>
-        </div>
-        <div className="flex items-center gap-3">
-          {result.name && <span className="text-sm text-gray-500">{String(result.name).slice(0, 200)}</span>}
-          <PrintButton />
+      <div className="sticky top-0 z-10 px-3 pt-3 sm:px-6">
+        <div className="glass-strong mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-2xl px-4 py-2.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="size-2 rounded-full bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,.9)]" />
+            <span className="text-sm font-semibold text-white">Resume<span className="text-violet-300">AI</span></span>
+            <span className="hidden text-xs text-slate-400 sm:inline">· Shared resume</span>
+          </div>
+          <div className="flex min-w-0 items-center gap-3">
+            {result.name && <span className="truncate text-sm text-slate-300">{String(result.name).slice(0, 200)}</span>}
+            <PrintButton />
+          </div>
         </div>
       </div>
 
       {/* Resume content */}
-      <div className="max-w-4xl mx-auto px-6 py-10">
-        <div className="bg-white rounded-2xl shadow-sm p-10 print:shadow-none print:rounded-none print:p-0">
+      <div className="relative max-w-4xl mx-auto px-3 py-8 sm:px-6 sm:py-10">
+        <div className="bg-white rounded-2xl p-6 shadow-[0_40px_120px_-40px_rgba(139,92,246,.55),0_20px_50px_-30px_rgba(0,0,0,.9)] ring-1 ring-white/10 sm:p-10 print:shadow-none print:ring-0 print:rounded-none print:p-0">
           <div dangerouslySetInnerHTML={{ __html: html.replace(/^[\s\S]*<body>/, '').replace(/<\/body>[\s\S]*$/, '') }} />
         </div>
       </div>

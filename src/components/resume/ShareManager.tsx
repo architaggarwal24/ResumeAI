@@ -81,16 +81,16 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
               <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1"><Lock size={10}/>Password (optional)</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="Leave blank for public (min 6 chars)" minLength={6} maxLength={128} autoComplete="new-password"
-                className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]" />
             </div>
             <div>
               <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1"><Calendar size={10}/>Expires in (days)</label>
               <input type="number" min={1} max={365} step={1} value={expireDays} onChange={e => setExpire(e.target.value)}
                 placeholder="Never"
-                className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" />
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]" />
             </div>
           </div>
-          {error && <p role="alert" className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2 mb-3">{error}</p>}
+          {error && <p role="alert" className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2 mb-3">{error}</p>}
           <div className="flex gap-2">
             <Button variant="primary" size="sm" onClick={createShare} loading={creating}>
               Create Link
@@ -102,24 +102,24 @@ export function ShareManager({ resumeId }: { resumeId: string }) {
 
       {/* Share list */}
       {loading ? (
-        <div className="flex justify-center py-6"><Loader2 size={18} className="spin text-slate-600" /></div>
+        <div className="flex justify-center py-6"><Loader2 size={18} className="spin text-slate-500" /></div>
       ) : shares.length === 0 ? (
-        <div className="text-center py-8 border-2 border-dashed border-white/8 rounded-xl">
-          <Link2 size={28} className="text-slate-600 mx-auto mb-2" />
+        <div className="text-center py-8 border-2 border-dashed border-white/10 rounded-xl">
+          <Link2 size={28} className="text-slate-500 mx-auto mb-2" />
           <p className="text-sm text-slate-500 mb-1">No share links yet</p>
-          <p className="text-xs text-slate-600">Create a link to share this resume publicly or with a password.</p>
+          <p className="text-xs text-slate-500">Create a link to share this resume publicly or with a password.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {shares.map(share => (
-            <div key={share.id} className="bg-[#1c1f23] border border-white/8 rounded-xl px-4 py-3">
+            <div key={share.id} className="bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3">
               <div className="flex items-center gap-3 mb-2">
-                <code className="flex-1 text-xs text-violet-300 truncate font-mono bg-violet-500/8 px-2 py-1 rounded">
+                <code className="flex-1 text-xs text-violet-300 truncate font-mono bg-violet-500/10 px-2 py-1 rounded">
                   {share.url}
                 </code>
                 <CopyButton value={share.url} />
                 <button onClick={() => revokeShare(share.id)}
-                  className="shrink-0 text-slate-600 hover:text-red-400 transition-colors p-1">
+                  className="shrink-0 text-slate-500 hover:text-red-400 transition-colors p-1">
                   <Trash2 size={13} />
                 </button>
               </div>

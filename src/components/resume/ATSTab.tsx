@@ -92,12 +92,12 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
   const acceptedCount = accepted.size
 
   return (
-    <div className="mx-auto px-6 py-6 max-w-3xl">
+    <div className="mx-auto px-4 py-6 sm:px-6 max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Zap size={16} className="text-violet-400" />
-          <h2 className="font-bold text-lg">ATS vs Job Description</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-white">ATS vs Job Description</h2>
         </div>
         {/* Undo/Redo — useful after applying suggestions */}
         <div className="flex items-center gap-1.5">
@@ -105,7 +105,7 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
             onClick={() => { undo(); addToast('Undo', 'info', 1500) }}
             disabled={undoPast.length === 0}
             title="Undo (Ctrl+Z)"
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
           >
             <Undo2 size={14} />
           </button>
@@ -113,7 +113,7 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
             onClick={() => { redo(); addToast('Redo', 'info', 1500) }}
             disabled={undoFuture.length === 0}
             title="Redo (Ctrl+Shift+Z)"
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/7 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
           >
             <Redo2 size={14} />
           </button>
@@ -128,7 +128,7 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
           value={localJD}
           onChange={e => setLocalJD(e.target.value)}
           placeholder="Paste the full job description here…"
-          className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none mb-3"
+          className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] resize-none mb-3"
         />
         <Button variant="primary" onClick={runATS} loading={isLoading} disabled={!localJD.trim()}>
           <Zap size={13} />
@@ -235,7 +235,7 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
                         'border rounded-xl overflow-hidden transition-all',
                         isAccepted  ? 'border-emerald-500/30 bg-emerald-500/5'  :
                         isDismissed ? 'border-white/5 opacity-40'               :
-                                      'border-white/8 bg-[#16181b] hover:border-white/15'
+                                      'border-white/10 bg-white/[0.035] backdrop-blur-xl hover:border-white/15'
                       )}
                     >
                       {/* Collapsed row — always shows quick Apply + Dismiss */}
@@ -246,7 +246,7 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
                           onClick={() => !isAccepted && !isDismissed && setExpanded(isExpanded ? null : s.id)}
                         >
                           <p className="text-xs text-slate-300 truncate">{s.reason}</p>
-                          <p className="text-xs text-slate-600 mt-0.5 truncate">
+                          <p className="text-xs text-slate-500 mt-0.5 truncate">
                             {s.section} · {s.category}
                           </p>
                         </div>
@@ -257,24 +257,24 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
                               <Check size={12} />Applied
                             </span>
                           ) : isDismissed ? (
-                            <span className="text-xs text-slate-600">Dismissed</span>
+                            <span className="text-xs text-slate-500">Dismissed</span>
                           ) : (
                             <>
                               <button
                                 onClick={() => applySuggestion(s)}
-                                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors"
+                                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors"
                               >
                                 <Check size={11} />Apply
                               </button>
                               <button
                                 onClick={() => setDismissed(p => new Set(p).add(s.id))}
-                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg hover:bg-white/5 text-slate-500 hover:text-red-400 transition-colors"
+                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-xl hover:bg-white/5 text-slate-500 hover:text-red-400 transition-colors"
                               >
                                 <X size={11} />
                               </button>
                               <button
                                 onClick={() => setExpanded(isExpanded ? null : s.id)}
-                                className="text-slate-600 hover:text-slate-400 transition-colors"
+                                className="text-slate-500 hover:text-slate-400 transition-colors"
                               >
                                 {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                               </button>
@@ -285,12 +285,12 @@ export function ATSTab({ resumeId }: { resumeId: string }) {
 
                       {/* Expanded diff — original vs suggested */}
                       {isExpanded && !isAccepted && !isDismissed && (
-                        <div className="px-4 pb-4 border-t border-white/7">
+                        <div className="px-4 pb-4 border-t border-white/[0.08]">
                           <div className="mt-3 space-y-2">
-                            <div className="text-xs text-red-400/80 line-through bg-red-400/5 border border-red-400/15 rounded-lg px-3 py-2 leading-relaxed">
+                            <div className="text-xs text-red-400/80 line-through bg-red-400/5 border border-red-400/15 rounded-xl px-3 py-2 leading-relaxed">
                               {s.original}
                             </div>
-                            <div className="text-xs text-emerald-400 bg-emerald-400/5 border border-emerald-400/15 rounded-lg px-3 py-2 leading-relaxed">
+                            <div className="text-xs text-emerald-400 bg-emerald-400/5 border border-emerald-400/15 rounded-xl px-3 py-2 leading-relaxed">
                               {s.suggested}
                             </div>
                           </div>

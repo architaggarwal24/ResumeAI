@@ -80,7 +80,7 @@ export function GenerateSectionBox({ resumeId, section, label, onApply }: Genera
 
   if (status === 'applied') {
     return (
-      <div className="mt-2 border border-emerald-500/20 bg-emerald-500/5 rounded-lg px-3 py-2">
+      <div className="mt-2 border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
           <Check size={11} />Added — head to the Edit tab to review and fine-tune
         </div>
@@ -91,17 +91,17 @@ export function GenerateSectionBox({ resumeId, section, label, onApply }: Genera
   if (!result) return null
 
   return (
-    <div className="mt-2 border border-violet-500/20 rounded-lg overflow-hidden bg-[#1c1f23]">
+    <div className="mt-2 border border-violet-500/20 rounded-xl overflow-hidden bg-white/[0.04]">
       <div className="px-3 py-2.5 space-y-2 text-xs text-slate-300 leading-relaxed">
         <GeneratedPreview result={result} section={section} />
         {result.note && (
-          <div className="flex items-start gap-1.5 px-2.5 py-1.5 bg-amber-500/8 border border-amber-500/15 rounded-lg text-amber-300">
+          <div className="flex items-start gap-1.5 px-2.5 py-1.5 bg-amber-500/8 border border-amber-500/15 rounded-xl text-amber-300">
             <AlertTriangle size={11} className="mt-0.5 shrink-0" />
             <span>{result.note}</span>
           </div>
         )}
       </div>
-      <div className="flex items-center gap-1.5 px-3 py-2 border-t border-white/7 bg-white/2">
+      <div className="flex items-center gap-1.5 px-3 py-2 border-t border-white/[0.08] bg-white/[0.02]">
         <Button variant="success" size="sm" onClick={apply}>
           <Check size={11} />Add to resume
         </Button>

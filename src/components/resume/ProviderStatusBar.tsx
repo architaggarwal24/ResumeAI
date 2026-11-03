@@ -58,19 +58,19 @@ export function ProviderStatusBar() {
               key={id}
               onClick={() => switchProvider(id)}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all',
                 isActive
                   ? hasKey
                     ? 'bg-violet-600 border-violet-500 text-white'
                     : 'bg-violet-600/20 border-violet-500/40 text-violet-300'
                   : hasKey
                     ? 'bg-emerald-500/8 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/15'
-                    : 'bg-white/4 border-white/8 text-slate-500 hover:bg-white/8 hover:text-slate-400'
+                    : 'bg-white/[0.04] border-white/10 text-slate-500 hover:bg-white/8 hover:text-slate-400'
               )}
             >
               {hasKey
                 ? <CheckCircle size={11} className={isActive ? 'text-white' : 'text-emerald-400'} />
-                : <XCircle    size={11} className="text-slate-600" />}
+                : <XCircle    size={11} className="text-slate-500" />}
               {PROVIDERS[id].name}
               {isActive && <span className="ml-0.5 text-[10px] opacity-70">active</span>}
             </button>
@@ -78,7 +78,7 @@ export function ProviderStatusBar() {
         })}
 
         <Link href="/settings"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-white/8 text-slate-500 hover:text-slate-300 hover:border-white/15 transition-all ml-auto">
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/15 transition-all ml-auto">
           <Settings size={11}/> Manage keys
         </Link>
       </div>
@@ -87,7 +87,7 @@ export function ProviderStatusBar() {
       <div className={cn(
         'flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm',
         byokCreds.apiKey
-          ? 'bg-[#16181b] border-white/8'
+          ? 'bg-white/[0.035] backdrop-blur-xl border-white/10'
           : 'bg-amber-400/5 border-amber-400/20'
       )}>
         {byokCreds.apiKey ? (
@@ -100,7 +100,7 @@ export function ProviderStatusBar() {
             </div>
 
             <button onClick={testConnection} disabled={testing}
-              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 border border-white/8 hover:border-white/20 px-2.5 py-1 rounded-lg transition-all disabled:opacity-50 shrink-0">
+              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 border border-white/10 hover:border-white/20 px-2.5 py-1 rounded-xl transition-all disabled:opacity-50 shrink-0">
               {testing ? <Loader2 size={11} className="spin"/> : null}
               {testing ? 'Testing…' : 'Test'}
             </button>
@@ -121,7 +121,7 @@ export function ProviderStatusBar() {
       </div>
 
       {testResult === 'fail' && testError && (
-        <div className="flex items-start gap-1.5 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+        <div className="flex items-start gap-1.5 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl">
           <AlertCircle size={12} className="text-red-400 mt-0.5 shrink-0"/>
           <p className="text-xs text-red-300">{testError}</p>
         </div>
@@ -135,7 +135,7 @@ export function ProviderStatusBar() {
           (byokCreds.provider === 'nvidia' && !byokCreds.model.includes('/') && !byokCreds.model.startsWith('meta/') && !byokCreds.model.startsWith('nvidia/') && !byokCreds.model.startsWith('mistralai/') && !byokCreds.model.startsWith('deepseek-ai/')) ||
           (byokCreds.provider === 'openrouter' && !byokCreds.model.includes('/'))
         return isCustom && looksWrong ? (
-          <div className="flex items-start gap-1.5 px-3 py-2 bg-amber-400/8 border border-amber-400/20 rounded-lg fade-in">
+          <div className="flex items-start gap-1.5 px-3 py-2 bg-amber-400/10 border border-amber-400/20 rounded-xl fade-in">
             <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0"/>
             <p className="text-xs text-amber-300">
               <strong>{byokCreds.model}</strong> doesn&apos;t look like a valid {PROVIDERS[byokCreds.provider].name} model ID.

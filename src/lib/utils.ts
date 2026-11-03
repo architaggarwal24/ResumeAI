@@ -20,20 +20,20 @@ export function formatDate(iso: string): string {
 
 export function scoreColor(score: number): string {
   if (score >= 70) return 'text-emerald-400'
-  if (score >= 45) return 'text-amber-400'
-  return 'text-red-400'
+  if (score >= 45) return 'text-amber-300'
+  return 'text-rose-400'
 }
 
 export function scoreBg(score: number): string {
   if (score >= 70) return 'bg-emerald-400/10 border-emerald-400/20'
-  if (score >= 45) return 'bg-amber-400/10 border-amber-400/20'
-  return 'bg-red-400/10 border-red-400/20'
+  if (score >= 45) return 'bg-amber-300/10 border-amber-300/25'
+  return 'bg-rose-400/10 border-rose-400/25'
 }
 
 export function strengthColor(s: string) {
   if (s === 'strong') return { text: 'text-emerald-400', bg: 'bg-emerald-400/10 border-emerald-400/25' }
-  if (s === 'ok')     return { text: 'text-amber-400',   bg: 'bg-amber-400/10 border-amber-400/25'   }
-  return                     { text: 'text-red-400',     bg: 'bg-red-400/10 border-red-400/25'       }
+  if (s === 'ok')     return { text: 'text-amber-300',   bg: 'bg-amber-300/10 border-amber-300/25'   }
+  return                     { text: 'text-rose-400',     bg: 'bg-rose-400/10 border-rose-400/25'     }
 }
 
 export function truncate(str: string, n: number): string {

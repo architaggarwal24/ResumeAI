@@ -41,11 +41,11 @@ export default function AnalyticsPage() {
   }))
 
   return (
-    <div className="mx-auto px-4 sm:px-8 py-8 max-w-6xl fade-in">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-10">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-semibold flex items-center gap-2 mb-1">
-          <BarChart2 size={20} className="text-violet-400" />Analytics
+        <h1 className="mb-2 flex items-center gap-3 text-4xl font-semibold tracking-tight text-white">
+          <span className="grid size-11 place-items-center rounded-2xl bg-violet-500/15 text-violet-200"><BarChart2 size={20}/></span>Analytics
         </h1>
         <p className="text-slate-400 text-sm">Score history, improvement trends, and cross-resume comparison.</p>
       </div>
@@ -59,9 +59,9 @@ export default function AnalyticsPage() {
           { label: 'Best Score',       value: data.bestScore != null ? data.bestScore : '—', icon: <Award size={14}/> },
         ].map((stat, i) => (
           <BlurFade key={stat.label} delay={i * 70}>
-            <Card className="text-center py-5">
-              <div className="flex justify-center text-violet-400 mb-2">{stat.icon}</div>
-              <p className="text-3xl font-bold font-mono mb-1">
+            <Card className="h-full rounded-3xl py-5">
+              <div className="mb-3 grid size-8 place-items-center rounded-lg bg-violet-500/15 text-violet-200">{stat.icon}</div>
+              <p className="mb-1 font-mono text-4xl font-semibold tracking-tight text-white">
                 {typeof stat.value === 'number' ? <CountUp to={stat.value} duration={1.2} /> : stat.value}
               </p>
               <p className="text-xs text-slate-500">{stat.label}</p>
@@ -105,8 +105,8 @@ export default function AnalyticsPage() {
                 className={cn(
                   'px-4 py-3 rounded-xl border cursor-pointer transition-all',
                   selected === r.resumeId
-                    ? 'border-violet-500/40 bg-violet-500/8'
-                    : 'border-white/7 bg-[#16181b] hover:border-white/15'
+                    ? 'border-violet-500/40 bg-violet-500/10'
+                    : 'border-white/[0.08] bg-white/[0.035] backdrop-blur-xl hover:border-white/15'
                 )}>
                 <div className="flex items-center justify-between mb-1.5">
                   <p className="text-sm font-medium truncate flex-1 mr-2">{r.resumeName}</p>
@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
                 </div>
                 {r.currentScore != null && <ScoreBar value={r.currentScore} />}
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-xs text-slate-600">{r.totalAnalyses} analyse{r.totalAnalyses !== 1 ? 's' : ''}</span>
+                  <span className="text-xs text-slate-500">{r.totalAnalyses} analyse{r.totalAnalyses !== 1 ? 's' : ''}</span>
                   {r.improvement != null && (
                     <ImprovementChip improvement={r.improvement} />
                   )}
@@ -133,7 +133,7 @@ export default function AnalyticsPage() {
           {selectedResume ? (
             <ResumeDetail resume={selectedResume} />
           ) : (
-            <div className="flex items-center justify-center h-full text-slate-600">
+            <div className="flex items-center justify-center h-full text-slate-500">
               Select a resume to see its score history
             </div>
           )}
@@ -153,7 +153,7 @@ export default function AnalyticsPage() {
                   <div key={r.resumeId}>
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-slate-600 w-4">{i + 1}</span>
+                        <span className="text-xs font-mono text-slate-500 w-4">{i + 1}</span>
                         <Link href={`/resume/${r.resumeId}`}
                           className="text-sm text-slate-200 hover:text-violet-300 transition-colors truncate max-w-xs">
                           {r.resumeName}
@@ -164,7 +164,7 @@ export default function AnalyticsPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         {r.peakScore != null && r.peakScore !== r.currentScore && (
-                          <span className="text-xs text-slate-600 font-mono">peak {r.peakScore}</span>
+                          <span className="text-xs text-slate-500 font-mono">peak {r.peakScore}</span>
                         )}
                         <span className={cn('text-sm font-mono font-bold w-8 text-right', scoreColor(r.currentScore ?? 0))}>
                           {r.currentScore}
@@ -187,7 +187,7 @@ function ResumeDetail({ resume }: { resume: ResumeAnalyticsSummary }) {
     <div className="space-y-5 fade-in">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="font-bold text-lg truncate">{resume.resumeName}</h2>
+          <h2 className="truncate text-2xl font-semibold tracking-tight text-white">{resume.resumeName}</h2>
           <p className="text-xs text-slate-500">{resume.totalAnalyses} analyses recorded</p>
         </div>
         <Link href={`/resume/${resume.resumeId}`}
@@ -218,7 +218,7 @@ function ResumeDetail({ resume }: { resume: ResumeAnalyticsSummary }) {
           <ScoreHistoryChart history={resume.scoreHistory} />
         </Card>
       ) : (
-        <Card className="text-center py-8 text-slate-600">
+        <Card className="text-center py-8 text-slate-500">
           <p className="text-sm">No score history yet.</p>
           <p className="text-xs mt-1">Run an analysis from the Score tab to start tracking.</p>
         </Card>
@@ -232,7 +232,7 @@ function ResumeDetail({ resume }: { resume: ResumeAnalyticsSummary }) {
             {[...resume.scoreHistory].reverse().map((pt, i) => (
               <div key={pt.analysisId} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-none">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-600 font-mono w-6">{resume.scoreHistory.length - i}</span>
+                  <span className="text-xs text-slate-500 font-mono w-6">{resume.scoreHistory.length - i}</span>
                   <span className="text-xs text-slate-400">{new Date(pt.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -272,23 +272,23 @@ function ScoreHistoryChart({ history }: { history: ScoreDataPoint[] }) {
 }
 
 function ImprovementChip({ improvement }: { improvement: number }) {
-  if (improvement === 0) return <span className="text-xs text-slate-600 flex items-center gap-0.5"><Minus size={10} />0</span>
+  if (improvement === 0) return <span className="text-xs text-slate-500 flex items-center gap-0.5"><Minus size={10} />0</span>
   if (improvement > 0)   return <span className="text-xs text-emerald-400 flex items-center gap-0.5"><TrendingUp size={10} />+{improvement}</span>
   return                        <span className="text-xs text-red-400 flex items-center gap-0.5"><TrendingDown size={10} />{improvement}</span>
 }
 
 function AnalyticsSkeleton() {
   return (
-    <div className="mx-auto px-8 py-8 max-w-6xl">
-      <div className="h-8 w-48 bg-white/5 rounded-lg animate-pulse mb-8" />
+    <div className="mx-auto px-4 py-8 sm:px-8 sm:py-10 max-w-6xl">
+      <div className="h-8 w-48 skeleton rounded-xl mb-8" />
       <div className="grid grid-cols-4 gap-4 mb-8">
-        {[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-white/5 rounded-xl animate-pulse" />)}
+        {[...Array(4)].map((_, i) => <div key={i} className="h-28 skeleton rounded-xl" />)}
       </div>
       <div className="grid grid-cols-3 gap-6">
         <div className="space-y-2">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />)}
+          {[...Array(3)].map((_, i) => <div key={i} className="h-20 skeleton rounded-xl" />)}
         </div>
-        <div className="col-span-2 h-80 bg-white/5 rounded-xl animate-pulse" />
+        <div className="col-span-2 h-80 skeleton rounded-xl" />
       </div>
     </div>
   )
@@ -296,17 +296,17 @@ function AnalyticsSkeleton() {
 
 function AnalyticsEmpty() {
   return (
-    <div className="mx-auto px-8 py-8 max-w-6xl">
-      <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2 mb-8">
-        <BarChart2 size={20} className="text-violet-400" />Analytics
+    <div className="mx-auto px-4 py-8 sm:px-8 sm:py-10 max-w-6xl">
+      <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-white mb-8">
+        <span className="grid size-11 place-items-center rounded-2xl bg-violet-500/15 text-violet-200"><BarChart2 size={20}/></span>Analytics
       </h1>
-      <div className="border-2 border-dashed border-white/8 rounded-2xl p-16 text-center">
-        <BarChart2 size={48} className="text-slate-600 mx-auto mb-4" />
+      <div className="glass rounded-3xl px-6 py-16 text-center">
+        <BarChart2 size={48} className="text-slate-500 mx-auto mb-4" />
         <h3 className="font-semibold text-lg mb-2">No data yet</h3>
         <p className="text-slate-400 text-sm mb-6">Upload a resume and run a score analysis to start tracking your progress.</p>
         <Link href="/upload"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-all">
-          Upload Resume
+          className="btn-sheen press inline-flex min-h-11 items-center gap-2 rounded-xl bg-[linear-gradient(180deg,#a78bfa,#7c3aed_60%,#6d28d9)] px-5 text-sm font-medium text-white shadow-[0_10px_28px_-10px_rgba(124,58,237,.9)]">
+          Upload resume
         </Link>
       </div>
     </div>

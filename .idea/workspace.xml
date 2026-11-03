@@ -5,33 +5,82 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c3f647c9-4c61-4801-bb8e-8a6c68055e34" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/ResumeAI.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/ResumeAI.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SECURITY-AUDIT.md" beforeDir="false" afterPath="$PROJECT_DIR$/SECURITY-AUDIT.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/THIRD_PARTY_NOTICES.md" beforeDir="false" afterPath="$PROJECT_DIR$/THIRD_PARTY_NOTICES.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/UI-REDESIGN.md" beforeDir="false" afterPath="$PROJECT_DIR$/UI-REDESIGN.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next-env.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(app)/analytics/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/analytics/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(app)/build/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/build/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(app)/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/dashboard/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(app)/interview/[jobId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/interview/[jobId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(app)/jobs/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/jobs/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(app)/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(app)/resume/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/resume/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(app)/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/settings/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(app)/upload/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/upload/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(auth)/login/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(auth)/login/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(auth)/signup/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(auth)/signup/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/analytics/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/analytics/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/jobs/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/jobs/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/resume/[id]/versions/[versionId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/resume/[id]/versions/[versionId]/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/resume/[id]/versions/restore/[versionId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/resume/[id]/versions/restore/[versionId]/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/resume/[id]/versions/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/resume/[id]/versions/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/resume/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/resume/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/resume/tailor/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/resume/tailor/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/share/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/share/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/auth/callback/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/auth/callback/route.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/globals.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/s/[slug]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/s/[slug]/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/auth/AuthShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/auth/AuthShell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/chat/ChatDrawer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/chat/ChatDrawer.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/dashboard/DashboardView.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/dashboard/DashboardView.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/landing/LandingNav.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/landing/LandingNav.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/layout/AppShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/layout/AppShell.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/resume/DeleteResumeButton.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/DeleteResumeButton.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/notifications/NotificationBell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/notifications/NotificationBell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/ATSTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/ATSTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/BYOKPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/BYOKPanel.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/CoverLetterTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/CoverLetterTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/EditorTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/EditorTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/GenerateSectionBox.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/GenerateSectionBox.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/HistoryTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/HistoryTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/InterviewTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/InterviewTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/PointerSuggestion.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/PointerSuggestion.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/PrintButton.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/PrintButton.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/ProviderStatusBar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/ProviderStatusBar.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/resume/ResumeShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/ResumeShell.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/resume/ScoreTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/ScoreTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/SectionSuggestion.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/SectionSuggestion.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/ShareManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/ShareManager.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/SharePasswordGate.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/SharePasswordGate.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/resume/TemplatesTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/resume/TemplatesTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/search/CommandPalette.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/search/CommandPalette.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/SpotCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/SpotCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/ToastContainer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/ToastContainer.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/fx/AgentSteps.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/fx/AgentSteps.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/fx/BlurFade.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/fx/BlurFade.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/fx/SpotlightCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/fx/SpotlightCard.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/ui/primitives.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/primitives.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/ui/viz/MiniRing.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/viz/MiniRing.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/pdf/extract.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/pdf/extract.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/viz/AreaChart.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/viz/AreaChart.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/viz/RadarChart.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/viz/RadarChart.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/score.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/score.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/security/guards.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/security/guards.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/utils.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/utils.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/supabase/migrations/000_reset.sql" beforeDir="false" afterPath="$PROJECT_DIR$/supabase/migrations/000_reset.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="268" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -150,7 +199,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-73a66231627c-5bd6d13a2a75-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-262.10968.92" />
+        <option value="bundled-js-predefined-d6986cc7102b-4abd2a77f808-JavaScript-PY-262.11879.98" />
+        <option value="bundled-python-sdk-ebb3072d7bdf-5bd6d13a2a75-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-262.11879.98" />
       </set>
     </attachedChunks>
   </component>
@@ -172,6 +222,9 @@
       <workItem from="1792840136783" duration="346000" />
       <workItem from="1793048064791" duration="415000" />
       <workItem from="1793077212834" duration="1290000" />
+      <workItem from="1793651669468" duration="2152000" />
+      <workItem from="1793688194306" duration="232000" />
+      <workItem from="1793690956588" duration="996000" />
     </task>
     <servers />
   </component>

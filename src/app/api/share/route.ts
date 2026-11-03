@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { getAuthedUser, unauthorized, limit, limiters, parseBody, ownsResume, isUuid, MAX_BODY } from '@/lib/security/guards'
+import { isLimitReached } from '@/lib/security/caps'
+import { appOrigin } from '@/lib/security/app-origin'
 
 const MIN_SHARE_PASSWORD = 6
 const MAX_SHARE_PASSWORD = 128   // bcrypt only uses the first 72 bytes; cap well above that
@@ -28,6 +30,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
+    const origin = appOrigin(request.nextUrl.origin)
     const shares = (data ?? []).map(s => ({
       id: s.id,
       slug: s.slug,
@@ -35,7 +38,7 @@ export async function GET(request: NextRequest) {
       expiresAt: s.expires_at,
       hasPassword: !!s.password_hash,
       createdAt: s.created_at,
-      url: `${request.nextUrl.origin}/s/${s.slug}`,
+      url: `${origin}/s/${s.slug}`,
     }))
 
     return NextResponse.json({ shares })
@@ -107,10 +110,13 @@ export async function POST(request: NextRequest) {
       .select('id, slug, view_count, expires_at, created_at')
       .single()
 
+    if (isLimitReached(error)) {
+      return NextResponse.json({ error: `Share link limit reached (${MAX_SHARES_PER_RESUME}). Revoke old links first.` }, { status: 409 })
+    }
     if (error || !data) throw error ?? new Error('insert failed')
 
     // Same camelCase shape as GET, and never the password hash.
-    const url = `${request.nextUrl.origin}/s/${slug}`
+    const url = `${appOrigin(request.nextUrl.origin)}/s/${slug}`
     return NextResponse.json({
       share: {
         id: data.id, slug: data.slug, viewCount: data.view_count ?? 0,

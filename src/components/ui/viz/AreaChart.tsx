@@ -60,8 +60,8 @@ export function AreaChart({ data, min = 0, max = 100, className, unit = '' }: {
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block" aria-hidden>
         <defs>
           <linearGradient id={`g${gid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3cc9ae" stopOpacity="0.38" />
-            <stop offset="100%" stopColor="#3cc9ae" stopOpacity="0" />
+            <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.38" />
+            <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -73,7 +73,7 @@ export function AreaChart({ data, min = 0, max = 100, className, unit = '' }: {
         ))}
 
         {data.length > 1 && <path d={area} fill={`url(#g${gid})`} />}
-        {data.length > 1 && <path d={line} pathLength={1} className="draw" fill="none" stroke="#3cc9ae" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />}
+        {data.length > 1 && <path d={line} pathLength={1} className="draw" fill="none" stroke="#8b5cf6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />}
 
         {data.map((d, i) => (i % step === 0 || i === data.length - 1) && (
           <text key={i} x={xAt(i)} y={H - 8} fontSize="9" textAnchor="middle" fill="rgba(255,255,255,0.3)">{d.label}</text>
@@ -84,14 +84,14 @@ export function AreaChart({ data, min = 0, max = 100, className, unit = '' }: {
         )}
         {pts.map((p, i) => (hover === i || i === pts.length - 1) && (
           <g key={i}>
-            <circle cx={p.x} cy={p.y} r="7" fill="#3cc9ae" opacity="0.18" />
-            <circle cx={p.x} cy={p.y} r="3.6" fill="#0b0c0d" stroke="#72e0c8" strokeWidth="2" />
+            <circle cx={p.x} cy={p.y} r="7" fill="#8b5cf6" opacity="0.18" />
+            <circle cx={p.x} cy={p.y} r="3.6" fill="#0b0c0d" stroke="#a78bfa" strokeWidth="2" />
           </g>
         ))}
       </svg>
 
       {h && hover !== null && (
-        <div className="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-lg border border-white/10 bg-[#16181b] px-2.5 py-1.5 text-center shadow-xl"
+        <div className="pointer-events-none absolute -translate-x-1/2 -translate-y-full glass-strong rounded-xl px-2.5 py-1.5 text-center shadow-xl"
           style={{ left: `${(pts[hover].x / W) * 100}%`, top: `${(pts[hover].y / H) * 100 - 4}%` }}>
           <p className="font-mono text-sm font-bold text-slate-100">{h.value}{unit}</p>
           <p className="text-[10px] text-slate-500">{h.label}</p>

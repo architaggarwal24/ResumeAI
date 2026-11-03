@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeResumeData } from '@/lib/security/resume-schema'
 import { getAuthedUser, unauthorized, limit, limiters, parseBody, ownsResume, MAX_BODY } from '@/lib/security/guards'
+import { isLimitReached } from '@/lib/security/caps'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -75,6 +76,9 @@ export async function POST(request: NextRequest, { params }: Params) {
       .insert({ resume_id: id, label, parsed_data: parsedData, ats_score: atsScore })
       .select().single()
 
+    if (isLimitReached(error)) {
+      return NextResponse.json({ error: `Snapshot limit reached (${MAX_VERSIONS_PER_RESUME}). Delete old snapshots first.` }, { status: 409 })
+    }
     if (error) throw error
     return NextResponse.json({ version: data }, { status: 201 })
   } catch (err) {

@@ -1,19 +1,18 @@
 // src/app/(app)/resume/[id]/page.tsx
 export const dynamic = 'force-dynamic'
-import { createClient } from '@/lib/supabase/server'
+import { requireUser } from '@/lib/supabase/require-user'
 import { notFound } from 'next/navigation'
 import { ResumeShell } from '@/components/resume/ResumeShell'
 
 export default async function ResumePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await requireUser()
 
   const { data: resume } = await supabase
     .from('resumes')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
     .single()
 
   if (!resume) notFound()

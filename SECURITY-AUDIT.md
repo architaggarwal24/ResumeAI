@@ -96,3 +96,16 @@ Dependency-free equivalents of patterns popularised by the libraries you listed 
 - `npm audit` could finally be run (dependencies were installed in a scratch copy). The lockfile pinned **Next.js 16.3.5**, which is inside several vulnerable ranges (including RCE advisories up to 16.4.0). Now pinned to **^16.4.3**, `sharp`, `source-map-js` and `zod` patched: **0 vulnerabilities** (prod and dev).
 - The new UI uses copied open-source component source (see `THIRD_PARTY_NOTICES.md`). I scanned it for network calls, `eval`, HTML injection, storage access and external URLs and found none. It adds npm dependencies (`motion`, visx, d3) that are covered by the audit above.
 - CSP is unchanged and works with the new components (verified with a production build in headless Chromium; no CSP violations in the console).
+
+## Addendum 2 — 20-point review fixes (2026-11-03)
+
+| # | Fix | Where |
+|---|---|---|
+| 20 | Login/signup show fixed, non-revealing messages; "already registered" shows the normal "check your email" screen | `lib/security/auth-messages.ts`, login/signup pages |
+| 16 | Share links and the post-login redirect are built from `NEXT_PUBLIC_APP_URL` (or Netlify `URL` / Vercel `VERCEL_PROJECT_PRODUCTION_URL`), never the Host header; production refuses to guess | `lib/security/app-origin.ts`, `api/share`, `auth/callback` |
+| 3 | Reset script no longer recreates the world-readable `shares_public_read` policy; share/job policies check resume ownership; header lists the migrations to re-run | `000_reset.sql` |
+| 1 | Pages that read user data check auth themselves (`requireUser()`), not only the middleware | `lib/supabase/require-user.ts`, app layout, dashboard, resume, settings |
+| 12 | Unconfirmed emails can't use the app: pages redirect to `/verify-email`, API routes return 401 | `lib/security/email-verified.ts`, `guards.ts`, `(auth)/verify-email` |
+| 11 | Per-owner caps enforced atomically by triggers with a per-owner advisory lock; routes map the error to 409; restores refuse to proceed if the safety snapshot can't be saved | `004_atomic_caps.sql`, `lib/security/caps.ts`, write routes |
+
+Tests: 92 unit tests (22 new). Migrations 000→002→003→004 were run against a local PostgreSQL 16 with a Supabase-style `auth.uid()` shim: reset leaves no public share policy; 26 sequential and 40 parallel share inserts both stop at exactly 25. **Not yet run against your Supabase project.**

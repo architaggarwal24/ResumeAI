@@ -51,7 +51,7 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
         body: JSON.stringify({ label: label.trim() || undefined, parsedData: resumeData, atsScore: analysisResult?.atsScore }),
       })
       if (!res.ok) throw new Error()
-      addToast('Snapshot saved ✓', 'success')
+      addToast('Snapshot saved', 'success')
       setShowLabel(false); setLabel(''); fetchVersions()
     } catch { addToast('Failed to save snapshot', 'error') }
     setSaving(false)
@@ -84,7 +84,7 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setResumeData(data.resume.parsed_data); setAnalysisResult(null)
-      addToast(`Restored to "${data.restoredFrom}" ✓`, 'success')
+      addToast(`Restored to "${data.restoredFrom}"`, 'success')
       setSelectedId(null); setSelected(null); setDiff(null); fetchVersions()
     } catch (err) { addToast(err instanceof Error ? err.message : 'Restore failed', 'error') }
     setRestoring(false)
@@ -102,19 +102,19 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
   const scoredV = versions.filter(v => v.ats_score != null).slice(0,10).reverse()
 
   return (
-    <div className="mx-auto px-6 py-6 max-w-4xl">
+    <div className="mx-auto px-4 py-6 sm:px-6 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <History size={16} className="text-violet-400"/>
-          <h2 className="font-bold text-lg">Version History</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-white">Version History</h2>
           <span className="text-xs font-mono text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">{versions.length} snapshot{versions.length !== 1 ? 's' : ''}</span>
         </div>
         {showLabel ? (
           <div className="flex gap-2 items-center">
             <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Label (optional)" autoFocus
               onKeyDown={e => e.key === 'Enter' && createSnapshot()}
-              className="bg-[#1c1f23] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 w-48"/>
+              className="bg-white/[0.04] border border-white/10 rounded-xl px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] w-48"/>
             <Button variant="primary" size="sm" onClick={createSnapshot} loading={savingSnap}>Save</Button>
             <Button size="sm" onClick={() => { setShowLabel(false); setLabel('') }}>Cancel</Button>
           </div>
@@ -152,16 +152,16 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
 
       {/* Empty */}
       {!loadingV && versions.length === 0 && (
-        <div className="text-center py-16 border-2 border-dashed border-white/8 rounded-2xl">
-          <GitBranch size={36} className="text-slate-600 mx-auto mb-3"/>
+        <div className="text-center py-16 border-2 border-dashed border-white/10 rounded-2xl">
+          <GitBranch size={36} className="text-slate-500 mx-auto mb-3"/>
           <p className="font-medium text-slate-400 mb-1">No snapshots yet</p>
-          <p className="text-sm text-slate-600 mb-4">Save a snapshot any time you want to preserve the current state of your resume.</p>
+          <p className="text-sm text-slate-500 mb-4">Save a snapshot any time you want to preserve the current state of your resume.</p>
           <Button variant="primary" size="sm" onClick={() => setShowLabel(true)}><Plus size={13}/>Save first snapshot</Button>
         </div>
       )}
 
       {/* Loading */}
-      {loadingV && <div className="space-y-2">{[...Array(4)].map((_,i) => <div key={i} className="h-16 rounded-xl bg-white/5 animate-pulse" style={{animationDelay:`${i*60}ms`}}/>)}</div>}
+      {loadingV && <div className="space-y-2">{[...Array(4)].map((_,i) => <div key={i} className="h-16 skeleton rounded-xl" style={{animationDelay:`${i*60}ms`}}/>)}</div>}
 
       {/* List + detail */}
       {!loadingV && versions.length > 0 && (
@@ -171,7 +171,7 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
               {versions.map((v, i) => (
                 <div key={v.id} onClick={() => selectVersion(v.id)}
                   className={cn('flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all group',
-                    selectedId===v.id ? 'border-violet-500/40 bg-violet-500/8' : 'border-white/7 hover:border-white/15 bg-[#16181b]')}>
+                    selectedId===v.id ? 'border-violet-500/40 bg-violet-500/10' : 'border-white/[0.08] hover:border-white/15 bg-white/[0.035] backdrop-blur-xl')}>
                   <div className="flex flex-col items-center shrink-0 self-stretch">
                     <div className={cn('w-2 h-2 rounded-full mt-1', i===0 ? 'bg-violet-500' : 'bg-slate-600')}/>
                     {i < versions.length-1 && <div className="w-px flex-1 bg-white/8 mt-1"/>}
@@ -181,11 +181,11 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
                     <p className="text-xs text-slate-500">{formatDate(v.created_at)}</p>
                   </div>
                   {v.ats_score != null && <span className={cn('text-xs font-mono font-bold shrink-0', scoreColor(v.ats_score))}>{Math.round(v.ats_score)}</span>}
-                  <button className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all"
+                  <button className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 transition-all"
                     onClick={e => { e.stopPropagation(); deleteVersion(v.id) }} disabled={deletingId===v.id}>
                     {deletingId===v.id ? <Loader2 size={13} className="spin"/> : <Trash2 size={13}/>}
                   </button>
-                  <ChevronRight size={13} className={cn('text-slate-600 shrink-0 transition-transform', selectedId===v.id && 'rotate-90')}/>
+                  <ChevronRight size={13} className={cn('text-slate-500 shrink-0 transition-transform', selectedId===v.id && 'rotate-90')}/>
                 </div>
               ))}
             </div>
@@ -224,7 +224,7 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
                   ) : diff ? (
                     <div>
                       <p className="text-xs font-mono text-slate-500 mb-2">Changes vs current version</p>
-                      <div className={cn('px-3 py-2.5 rounded-lg mb-3 text-sm border',
+                      <div className={cn('px-3 py-2.5 rounded-xl mb-3 text-sm border',
                         diff.impact==='positive' ? 'bg-emerald-400/8 border-emerald-400/20 text-emerald-300' :
                         diff.impact==='negative' ? 'bg-red-400/8 border-red-400/20 text-red-300' :
                                                    'bg-white/5 border-white/10 text-slate-300')}>
@@ -242,7 +242,7 @@ export function HistoryTab({ resumeId }: { resumeId: string }) {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-600">Add an API key to generate an AI-powered diff.</p>
+                    <p className="text-xs text-slate-500">Add an API key to generate an AI-powered diff.</p>
                   )}
                 </Card>
               ) : null}

@@ -90,7 +90,7 @@ export function PointerSuggestion({
   // ── Applied — show what was applied + option to suggest again ────────────
   if (status === 'applied' && result) {
     return (
-      <div className="mt-2 border border-emerald-500/20 bg-emerald-500/5 rounded-lg px-3 py-2">
+      <div className="mt-2 border border-emerald-500/20 bg-emerald-500/5 rounded-xl px-3 py-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
             <Check size={11} />Applied
@@ -111,13 +111,13 @@ export function PointerSuggestion({
   if (status !== 'ready' || !result) return null
 
   return (
-    <div className="mt-2 border border-violet-500/20 rounded-lg overflow-hidden bg-[#1c1f23]">
+    <div className="mt-2 border border-violet-500/20 rounded-xl overflow-hidden bg-white/[0.04]">
       <div className="px-3 py-2.5 space-y-1.5">
         <p className="text-xs text-red-400/70 line-through leading-relaxed">{currentText}</p>
         <p className="text-xs text-emerald-400 leading-relaxed">{result.suggested}</p>
         <p className="text-xs text-slate-500 leading-relaxed pt-0.5">{result.reason}</p>
       </div>
-      <div className="flex items-center gap-1.5 px-3 py-2 border-t border-white/7 bg-white/2">
+      <div className="flex items-center gap-1.5 px-3 py-2 border-t border-white/[0.08] bg-white/[0.02]">
         <Button variant="success" size="sm" onClick={apply}>
           <Check size={11} />Apply
         </Button>

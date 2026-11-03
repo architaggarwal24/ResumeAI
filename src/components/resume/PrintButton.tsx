@@ -8,7 +8,7 @@ export function PrintButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+      className="press shrink-0 rounded-xl bg-[linear-gradient(180deg,#a78bfa,#7c3aed_60%,#6d28d9)] px-3.5 py-2 text-xs font-medium text-white shadow-[0_8px_20px_-8px_rgba(124,58,237,.9)]"
     >
       Print / Save PDF
     </button>

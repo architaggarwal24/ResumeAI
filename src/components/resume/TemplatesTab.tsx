@@ -58,10 +58,10 @@ export function TemplatesTab({ resumeId }: { resumeId: string }) {
   }
 
   return (
-    <div className="mx-auto px-6 py-6 max-w-5xl">
+    <div className="mx-auto px-4 py-6 sm:px-6 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-bold text-lg">Templates</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-white">Templates</h2>
           <p className="text-xs text-slate-500 mt-0.5">Content stays the same — only the layout changes</p>
         </div>
       </div>
@@ -72,8 +72,8 @@ export function TemplatesTab({ resumeId }: { resumeId: string }) {
         <div className="grid grid-cols-3 gap-3">
           {FORMAT_CONFIG.map(fmt => (
             <button key={fmt.id} onClick={() => exportResume(fmt.id)} disabled={!resumeData || !!exporting}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/8 hover:border-violet-500/40 hover:bg-violet-500/5 transition-all text-left disabled:opacity-50 group">
-              <div className="w-8 h-8 rounded-lg bg-violet-600/15 flex items-center justify-center shrink-0 text-violet-400 group-hover:bg-violet-600/25 transition-colors">
+              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 hover:border-violet-500/40 hover:bg-violet-500/5 transition-all text-left disabled:opacity-50 group">
+              <div className="w-8 h-8 rounded-xl bg-violet-600/15 flex items-center justify-center shrink-0 text-violet-400 group-hover:bg-violet-600/25 transition-colors">
                 {exporting === fmt.id
                   ? <span className="text-xs font-mono text-violet-400 animate-pulse">…</span>
                   : fmt.icon}
@@ -95,7 +95,7 @@ export function TemplatesTab({ resumeId }: { resumeId: string }) {
             className={cn('border-2 rounded-xl overflow-hidden cursor-pointer transition-all',
               selectedTemplate === t.id
                 ? 'border-violet-500 shadow-lg shadow-violet-900/30'
-                : 'border-white/8 hover:border-white/20')}
+                : 'border-white/10 hover:border-white/20')}
             onClick={() => saveTemplate(t.id)}>
             <div className="bg-white aspect-[0.77] overflow-hidden relative">
               {resumeData ? (
@@ -112,7 +112,7 @@ export function TemplatesTab({ resumeId }: { resumeId: string }) {
                 </div>
               )}
             </div>
-            <div className="p-3 bg-[#16181b]">
+            <div className="p-3 bg-white/[0.035] backdrop-blur-xl">
               <div className="flex items-center justify-between mb-0.5">
                 <p className="font-semibold text-sm">{t.name}</p>
                 {selectedTemplate === t.id && <span className="text-xs font-mono text-violet-400 bg-violet-400/10 px-1.5 py-0.5 rounded">Active</span>}

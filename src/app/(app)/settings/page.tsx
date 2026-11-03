@@ -86,7 +86,8 @@ export default function SettingsPage() {
     setSaving(true)
     // Nothing to save to DB for BYOK (keys stay local) — just save template preference
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('users').update({ provider: byokCreds.provider, model: byokCreds.model }).eq('id', user!.id)
+    if (!user) { setSaving(false); router.push('/login'); return }
+    await supabase.from('users').update({ provider: byokCreds.provider, model: byokCreds.model }).eq('id', user.id)
     setSaving(false); setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -95,7 +96,8 @@ export default function SettingsPage() {
     if (deleteConfirm !== 'DELETE') return
     setDeleting(true)
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('users').delete().eq('id', user!.id)
+    if (!user) { setDeleting(false); router.push('/login'); return }
+    await supabase.from('users').delete().eq('id', user.id)
     await supabase.auth.signOut()
     router.push('/signup')
   }
@@ -112,10 +114,10 @@ export default function SettingsPage() {
   )
 
   return (
-    <div className="mx-auto px-8 py-8 max-w-2xl fade-in">
+    <div className="mx-auto px-4 py-8 sm:px-8 sm:py-10 max-w-2xl fade-in">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2 mb-1">
-          <Settings size={20} className="text-violet-400"/>Settings
+        <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-white mb-1">
+          <span className="grid size-11 place-items-center rounded-2xl bg-violet-500/15 text-violet-200"><Settings size={20}/></span>Settings
         </h1>
         <p className="text-slate-400 text-sm">API keys, preferences, and account management.</p>
       </div>
@@ -129,7 +131,7 @@ export default function SettingsPage() {
         <div>
           <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">Email</label>
           <input value={userEmail} disabled
-            className="w-full bg-[#1c1f23]/50 border border-white/5 rounded-lg px-3 py-2 text-sm text-slate-400 cursor-not-allowed"/>
+            className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 text-sm text-slate-400 cursor-not-allowed"/>
         </div>
       </Card>
 
@@ -144,7 +146,7 @@ export default function SettingsPage() {
         </p>
 
         {/* Provider tabs */}
-        <div className="flex gap-1 p-1 bg-[#0b0c0d] rounded-lg mb-4 overflow-x-auto">
+        <div className="flex gap-1 p-1 bg-ink rounded-xl mb-4 overflow-x-auto">
           {(Object.keys(PROVIDERS) as LLMProvider[]).map(id => (
             <button key={id}
               className={cn(
@@ -170,7 +172,7 @@ export default function SettingsPage() {
                     value={byokCreds.apiKey}
                     onChange={e => { setApiKey(e.target.value); setTestResult(null) }}
                     placeholder={cfg.placeholder}
-                    className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 pr-9"
+                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] pr-9"
                   />
                   <button
                     onClick={() => setShowKeys(p => ({ ...p, [byokCreds.provider]: !p[byokCreds.provider] }))}
@@ -178,7 +180,7 @@ export default function SettingsPage() {
                     {showKeys[byokCreds.provider] ? <EyeOff size={14}/> : <Eye size={14}/>}
                   </button>
                 </div>
-                <p className="text-xs text-slate-600 mt-1">{cfg.hint}</p>
+                <p className="text-xs text-slate-500 mt-1">{cfg.hint}</p>
               </>
           </div>
 
@@ -191,7 +193,7 @@ export default function SettingsPage() {
                 if (e.target.value === '__custom__') setShowCustom(true)
                 else if (e.target.value !== '__custom_active__') { setModel(e.target.value); setShowCustom(false) }
               }}
-              className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 mb-2"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] mb-2"
             >
               {cfg.models.map(m => <option key={m} value={m}>{m}</option>)}
               {isCustomModel && <option value="__custom_active__">{byokCreds.model} (custom)</option>}
@@ -203,9 +205,9 @@ export default function SettingsPage() {
                 <input value={customModel} onChange={e => setCustomModel(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && applyCustomModel()}
                   placeholder={byokCreds.provider === 'openrouter' ? 'e.g. deepseek/deepseek-v3:free' : byokCreds.provider === 'nvidia' ? 'e.g. nvidia/nemotron-3-nano-30b-a3b' : 'model ID'} autoFocus
-                  className="flex-1 bg-[#1c1f23] border border-violet-500/40 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/70"/>
-                <button onClick={applyCustomModel} className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-lg">Use</button>
-                <button onClick={() => setShowCustom(false)} className="px-2 py-1.5 bg-white/5 text-slate-400 text-xs rounded-lg">✕</button>
+                  className="flex-1 bg-white/[0.04] border border-violet-500/40 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500/70"/>
+                <button onClick={applyCustomModel} className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-xl">Use</button>
+                <button onClick={() => setShowCustom(false)} className="px-2 py-1.5 bg-white/5 text-slate-400 text-xs rounded-xl">✕</button>
               </div>
             )}
             {isCustomModel && !showCustom && (
@@ -218,7 +220,7 @@ export default function SettingsPage() {
             {/* Test connection */}
             <div className="flex items-center gap-2 flex-wrap">
               <button onClick={testConnection} disabled={!byokCreds.apiKey || testing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/10 bg-transparent text-slate-300 hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-white/10 bg-transparent text-slate-300 hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                 {testing ? <><Loader2 size={12} className="spin"/>Testing…</> : 'Test connection'}
               </button>
               {testResult === 'ok' && <span className="flex items-center gap-1 text-xs text-emerald-400"><CheckCircle size={12}/>Connected {testLatency ? `(${testLatency}ms)` : ''}</span>}
@@ -227,13 +229,13 @@ export default function SettingsPage() {
               {jsonResult === 'fail' && <span className="flex items-center gap-1 text-xs text-amber-400"><AlertCircle size={12}/>JSON output unreliable</span>}
             </div>
             {testResult === 'fail' && testError && (
-              <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-red-500/10 border border-red-500/20 rounded-xl">
                 <AlertCircle size={12} className="text-red-400 mt-0.5 shrink-0"/>
                 <p className="text-xs text-red-300 leading-snug">{testError}</p>
               </div>
             )}
             {jsonResult === 'fail' && jsonError && (
-              <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <div className="mt-2 flex items-start gap-1.5 px-2.5 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                 <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0"/>
                 <p className="text-xs text-amber-300 leading-snug">
                   Connected, but this model didn&apos;t return valid JSON — scoring, suggestions, and the AI coach&apos;s edit proposals may fail. {jsonError}
@@ -244,14 +246,14 @@ export default function SettingsPage() {
         </div>
 
         {/* Keys status for all providers */}
-        <div className="mt-4 pt-4 border-t border-white/7">
-          <p className="text-xs font-mono text-slate-600 uppercase tracking-wider mb-2">Saved Keys</p>
+        <div className="mt-4 pt-4 border-t border-white/[0.08]">
+          <p className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-2">Saved Keys</p>
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(PROVIDERS) as LLMProvider[]).map(id => {
               const hasKey = !!getStoredKey(id)
               return (
-                <div key={id} className={cn('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border',
-                  hasKey ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' : 'border-white/7 text-slate-600')}>
+                <div key={id} className={cn('flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs border',
+                  hasKey ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' : 'border-white/[0.08] text-slate-500')}>
                   {hasKey ? <CheckCircle size={11}/> : <XCircle size={11}/>}
                   {PROVIDERS[id].name}
                 </div>
@@ -270,10 +272,10 @@ export default function SettingsPage() {
         <div className="grid grid-cols-4 gap-2">
           {Object.values(TEMPLATES).map(t => (
             <button key={t.id} onClick={() => setTemplate(t.id)}
-              className={cn('px-3 py-2 rounded-lg border text-xs font-medium transition-all',
+              className={cn('px-3 py-2 rounded-xl border text-xs font-medium transition-all',
                 defaultTemplate === t.id
                   ? 'border-violet-500/40 bg-violet-500/10 text-violet-300'
-                  : 'border-white/8 text-slate-400 hover:border-white/15')}>
+                  : 'border-white/10 text-slate-400 hover:border-white/15')}>
               {t.name}
             </button>
           ))}
@@ -305,7 +307,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2">
               <input value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)}
                 placeholder='Type "DELETE" to confirm'
-                className="bg-[#1c1f23] border border-red-500/20 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-red-500/40 w-48"/>
+                className="bg-white/[0.04] border border-red-500/20 rounded-xl px-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-red-500/40 w-48"/>
               <Button variant="danger" size="sm" disabled={deleteConfirm !== 'DELETE' || deleting}
                 onClick={deleteAllData} loading={deleting}>
                 <Trash2 size={12}/>Delete Everything

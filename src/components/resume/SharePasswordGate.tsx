@@ -60,13 +60,15 @@ export function SharePasswordGate({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0c0d] flex items-center justify-center p-8">
-      <div className="w-full max-w-sm fade-in">
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-violet-600/20 flex items-center justify-center mx-auto mb-4">
-            <Lock size={24} className="text-violet-400" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ink p-6">
+      <div aria-hidden className="aurora-field"><i /><i /><i /></div>
+      <div className="glass-strong blur-in relative w-full max-w-sm rounded-3xl p-7">
+        <span aria-hidden className="edge" />
+        <div className="text-center mb-7">
+          <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-[linear-gradient(145deg,#a78bfa,#6d28d9)] text-white shadow-[0_12px_30px_-8px_rgba(124,58,237,.9)]">
+            <Lock size={24} />
           </div>
-          <h1 className="text-xl font-bold text-slate-100 mb-1">Password Protected</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-100 mb-1">Password protected</h1>
           <p className="text-slate-400 text-sm">This resume requires a password to view.</p>
         </div>
         <div className="space-y-3">
@@ -75,16 +77,18 @@ export function SharePasswordGate({ slug }: { slug: string }) {
             value={pw}
             onChange={e => setPw(e.target.value)}
             placeholder="Enter password"
+            aria-label="Password"
             onKeyDown={e => e.key === 'Enter' && verify()}
             autoFocus
             disabled={loading}
-            className="w-full bg-[#16181b] border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
+            className="w-full h-12 bg-white/[0.04] border border-white/10 rounded-xl px-4 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"
           />
-          {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+          {error && <p role="alert" className="text-center text-sm text-rose-300">{error}</p>}
           <button
             onClick={verify}
             disabled={loading}
-            className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-all disabled:opacity-60"
+            type="button"
+            className="btn-sheen press min-h-12 w-full rounded-xl bg-[linear-gradient(180deg,#a78bfa,#7c3aed_60%,#6d28d9)] text-sm font-medium text-white shadow-[0_10px_28px_-10px_rgba(124,58,237,.9)] disabled:opacity-60"
           >
             {loading ? 'Checking…' : 'Unlock'}
           </button>

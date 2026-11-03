@@ -2,7 +2,9 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useResumeStore } from '@/store/resumeStore'
-import { MessageSquare, X, Send, Bot, User, Sparkles, RotateCcw, Check, RefreshCw } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { X, Send, Bot, User, Sparkles, RotateCcw, Check, RefreshCw } from 'lucide-react'
+import { SPRING } from '@/lib/motion'
 import { cn, generateId } from '@/lib/utils'
 import { applyResumeEdit, extractProposedEdits, stripPartialEditBlock } from '@/lib/resumeEdits'
 import type { ChatMessage } from '@/types/resume'
@@ -116,139 +118,175 @@ export function ChatDrawer() {
 
   return (
     <>
-      {/* Toggle button */}
-      <button
+      {/* Toggle — floating orb button */}
+      <motion.button
+        type="button"
         onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-label={open ? 'Close AI coach' : 'Open AI coach'}
+        whileHover={{ y: -2 }}
+        whileTap={{ scale: 0.95 }}
+        transition={SPRING.snappy}
         className={cn(
-          'fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg transition-all',
+          'fixed bottom-24 right-4 z-40 flex h-12 items-center gap-2 rounded-full px-4 text-sm font-medium sm:bottom-6 sm:right-6',
           open
-            ? 'bg-[#1c1f23] border border-white/15 text-slate-400 hover:text-slate-200'
-            : 'bg-violet-600 hover:bg-violet-500 text-white shadow-violet-900/40'
+            ? 'glass-strong text-slate-200'
+            : 'btn-sheen bg-[linear-gradient(180deg,#a78bfa,#7c3aed_60%,#6d28d9)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_0_0_1px_rgba(167,139,250,.5),0_14px_34px_-10px_rgba(124,58,237,.95)]'
         )}
       >
-        {open ? <X size={16} /> : <MessageSquare size={16} />}
-        <span className="text-sm font-medium">{open ? 'Close' : 'AI Coach'}</span>
-      </button>
+        {!open && <span aria-hidden className="absolute inset-0 animate-[ping-soft_2.6s_ease-out_infinite] rounded-full border border-violet-300/50" />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span key={open ? 'x' : 'c'} initial={{ rotate: -90, scale: 0.6 }} animate={{ rotate: 0, scale: 1 }} exit={{ rotate: 90, scale: 0.6 }} transition={{ duration: 0.15 }}>
+            {open ? <X size={16} /> : <Sparkles size={16} />}
+          </motion.span>
+        </AnimatePresence>
+        <span>{open ? 'Close' : 'AI Coach'}</span>
+      </motion.button>
 
       {/* Drawer */}
-      {open && (
-        <div className="fixed right-6 bottom-16 z-40 w-[380px] h-[520px] flex flex-col bg-[#16181b] border border-white/12 rounded-2xl shadow-2xl overflow-hidden fade-in">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-violet-600/30 flex items-center justify-center">
-                <Sparkles size={12} className="text-violet-400" />
-              </div>
-              <span className="font-semibold text-sm">AI Resume Coach</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {messages.length > 0 && (
-                <button onClick={clearChat} className="text-slate-600 hover:text-slate-300 p-1 rounded hover:bg-white/5 transition-colors">
-                  <RotateCcw size={13} />
-                </button>
-              )}
-              <button onClick={() => setOpen(false)} className="text-slate-600 hover:text-slate-300 p-1 rounded hover:bg-white/5 transition-colors">
-                <X size={14} />
-              </button>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 ? (
-              <div className="space-y-3">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-violet-600/30 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot size={12} className="text-violet-400" />
-                  </div>
-                  <div className="bg-white/5 rounded-2xl rounded-tl-sm px-3 py-2.5 text-sm text-slate-300 leading-relaxed">
-                    Hi! I&apos;m your AI resume coach. I have full context of your resume — I can point out weaknesses, rewrite sections, and propose edits you can apply to your resume with one click.
-                  </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="dialog"
+            aria-label="AI resume coach"
+            initial={{ opacity: 0, y: 24, scale: 0.94, originX: 1, originY: 1 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96, transition: { duration: 0.16 } }}
+            transition={SPRING.soft}
+            className="glass-strong fixed inset-x-3 bottom-40 top-20 z-40 flex flex-col overflow-hidden rounded-3xl sm:inset-auto sm:bottom-20 sm:right-6 sm:h-[560px] sm:w-[400px]"
+          >
+            <span aria-hidden className="edge" />
+            {/* Header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-white/[0.07] px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <div className="relative grid size-9 place-items-center rounded-xl bg-[linear-gradient(145deg,#a78bfa,#6d28d9)] shadow-[0_0_20px_-4px_rgba(139,92,246,.9)]">
+                  <Sparkles size={15} className="text-white" />
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[#120e1a] bg-emerald-400" />
                 </div>
-                <div className="space-y-1.5 pt-1">
-                  {SUGGESTIONS.map((s, i) => (
-                    <button key={i} onClick={() => sendMessage(s)}
-                      className="w-full text-left text-xs text-slate-400 hover:text-slate-200 px-3 py-2 bg-white/4 hover:bg-white/8 rounded-xl transition-colors">
-                      {s}
-                    </button>
-                  ))}
+                <div>
+                  <p className="text-sm font-semibold text-white">AI Resume Coach</p>
+                  <p className="text-[11px] text-slate-400">{streaming ? 'Thinking…' : 'Has read your resume'}</p>
                 </div>
               </div>
-            ) : (
-              messages.map(msg => (
-                <div key={msg.id} className={cn('flex items-start gap-2.5', msg.role === 'user' && 'flex-row-reverse')}>
-                  <div className={cn('w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5',
-                    msg.role === 'user' ? 'bg-slate-700' : 'bg-violet-600/30')}>
-                    {msg.role === 'user'
-                      ? <User size={11} className="text-slate-300" />
-                      : <Bot  size={11} className="text-violet-400" />}
-                  </div>
-                  <div className={cn(
-                    'max-w-[88%] px-3 py-2.5 text-sm leading-relaxed',
-                    msg.role === 'user'
-                      ? 'bg-violet-600/20 text-violet-100 rounded-2xl rounded-tr-sm'
-                      : 'bg-white/5 text-slate-300 rounded-2xl rounded-tl-sm'
-                  )}>
-                    {msg.content ? (
-                      msg.role === 'assistant' ? (
-                        <AssistantMessage
-                          messageId={msg.id}
-                          content={msg.content}
-                          streaming={streaming}
-                          editStatuses={editStatuses}
-                          onApply={applyEdit}
-                          onDeny={denyEdit}
-                          onResuggest={resuggestEdit}
-                        />
-                      ) : (
-                        <MessageContent content={msg.content} />
-                      )
-                    ) : (
-                      <span className="flex gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{animationDelay:'0ms'}}/>
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{animationDelay:'150ms'}}/>
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{animationDelay:'300ms'}}/>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          {/* Input */}
-          <div className="px-3 py-3 border-t border-white/8 shrink-0">
-            <div className="flex items-end gap-2">
-              <textarea
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
-                placeholder="Ask anything about your resume…"
-                rows={1}
-                disabled={streaming}
-                className="flex-1 bg-[#1c1f23] border border-white/8 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none disabled:opacity-50"
-                style={{ minHeight: 38, maxHeight: 100, overflowY: 'auto' }}
-              />
-              <button
-                onClick={streaming ? stopStreaming : () => sendMessage(input)}
-                disabled={!streaming && !input.trim()}
-                className={cn(
-                  'w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0',
-                  streaming
-                    ? 'bg-red-500/15 text-red-400 hover:bg-red-500/25'
-                    : 'bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-40 disabled:cursor-not-allowed'
+              <div className="flex items-center gap-1">
+                {messages.length > 0 && (
+                  <button type="button" onClick={clearChat} aria-label="Clear conversation" title="Clear conversation" className="press grid size-9 place-items-center rounded-xl text-slate-400 hover:bg-white/[0.07] hover:text-white">
+                    <RotateCcw size={14} />
+                  </button>
                 )}
-              >
-                {streaming
-                  ? <X size={14} />
-                  : <Send size={14} />}
-              </button>
+                <button type="button" onClick={() => setOpen(false)} aria-label="Close AI coach" className="press grid size-9 place-items-center rounded-xl text-slate-400 hover:bg-white/[0.07] hover:text-white">
+                  <X size={15} />
+                </button>
+              </div>
             </div>
-            <p className="text-xs text-slate-600 mt-1.5 text-center">Shift+Enter for new line · Enter to send</p>
-          </div>
-        </div>
-      )}
+
+            {/* Messages */}
+            <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite">
+              {messages.length === 0 ? (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-violet-500/25">
+                      <Bot size={13} className="text-violet-200" />
+                    </div>
+                    <div className="rounded-2xl rounded-tl-md bg-white/[0.06] px-3.5 py-2.5 text-sm leading-relaxed text-slate-200">
+                      Hi! I&apos;m your AI resume coach. I have full context of your resume — I can point out weaknesses, rewrite sections, and propose edits you can apply with one click.
+                    </div>
+                  </div>
+                  <p className="px-1 pt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">Try asking</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SUGGESTIONS.map((s, i) => (
+                      <motion.button
+                        type="button"
+                        key={i}
+                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => sendMessage(s)}
+                        className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-left text-xs text-slate-300 transition-colors hover:border-violet-300/35 hover:bg-violet-500/10 hover:text-white"
+                      >
+                        {s}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                messages.map(msg => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={SPRING.soft}
+                    className={cn('flex items-start gap-2.5', msg.role === 'user' && 'flex-row-reverse')}
+                  >
+                    <div className={cn('mt-0.5 grid size-7 shrink-0 place-items-center rounded-full', msg.role === 'user' ? 'bg-white/10' : 'bg-violet-500/25')}>
+                      {msg.role === 'user'
+                        ? <User size={12} className="text-slate-200" />
+                        : <Bot  size={13} className="text-violet-200" />}
+                    </div>
+                    <div className={cn(
+                      'max-w-[86%] px-3.5 py-2.5 text-sm leading-relaxed',
+                      msg.role === 'user'
+                        ? 'rounded-2xl rounded-tr-md bg-[linear-gradient(180deg,rgba(139,92,246,.4),rgba(109,40,217,.35))] text-white'
+                        : 'rounded-2xl rounded-tl-md bg-white/[0.06] text-slate-200'
+                    )}>
+                      {msg.content ? (
+                        msg.role === 'assistant' ? (
+                          <AssistantMessage
+                            messageId={msg.id}
+                            content={msg.content}
+                            streaming={streaming}
+                            editStatuses={editStatuses}
+                            onApply={applyEdit}
+                            onDeny={denyEdit}
+                            onResuggest={resuggestEdit}
+                          />
+                        ) : (
+                          <MessageContent content={msg.content} />
+                        )
+                      ) : (
+                        <span className="flex gap-1 py-1" aria-label="Coach is typing">
+                          {[0, 150, 300].map(d => <span key={d} className="size-1.5 animate-bounce rounded-full bg-violet-300" style={{ animationDelay: `${d}ms` }} />)}
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                ))
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Input */}
+            <div className="shrink-0 border-t border-white/[0.07] p-3">
+              <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1.5 transition-colors focus-within:border-violet-300/50 focus-within:shadow-[0_0_0_4px_rgba(139,92,246,.14)]">
+                <textarea
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
+                  placeholder="Ask anything about your resume…"
+                  aria-label="Message the AI coach"
+                  rows={1}
+                  disabled={streaming}
+                  className="flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+                  style={{ minHeight: 38, maxHeight: 110, overflowY: 'auto' }}
+                />
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.9 }}
+                  onClick={streaming ? stopStreaming : () => sendMessage(input)}
+                  disabled={!streaming && !input.trim()}
+                  aria-label={streaming ? 'Stop' : 'Send'}
+                  className={cn(
+                    'grid size-10 shrink-0 place-items-center rounded-xl transition-colors',
+                    streaming
+                      ? 'bg-rose-500/15 text-rose-300 hover:bg-rose-500/25'
+                      : 'bg-[linear-gradient(180deg,#a78bfa,#6d28d9)] text-white disabled:cursor-not-allowed disabled:opacity-40'
+                  )}
+                >
+                  {streaming ? <X size={15} /> : <Send size={15} />}
+                </motion.button>
+              </div>
+              <p className="mt-1.5 text-center text-[11px] text-slate-500">Enter to send · Shift+Enter for a new line</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }
@@ -262,7 +300,7 @@ function MessageContent({ content }: { content: string }) {
         if (part.startsWith('```') && part.endsWith('```')) {
           const code = part.slice(3, -3).replace(/^[a-z]*\n/, '')
           return (
-            <pre key={i} className="mt-2 mb-2 bg-black/30 rounded-lg p-2.5 text-xs text-emerald-300 overflow-x-auto whitespace-pre-wrap font-mono">
+            <pre key={i} className="mt-2 mb-2 bg-black/40 rounded-xl p-3 text-xs text-violet-100 border border-white/[0.06] overflow-x-auto whitespace-pre-wrap font-mono">
               {code}
             </pre>
           )
@@ -304,14 +342,14 @@ function AssistantMessage({
             status === 'denied'  ? 'border-white/5 opacity-50' :
                                     'border-violet-500/25 bg-[#1c1f23]'
           )}>
-            <div className="px-3 py-1.5 bg-violet-500/8 border-b border-white/7">
-              <span className="text-xs font-mono text-violet-400">✦ {edit.label}</span>
+            <div className="px-3 py-1.5 bg-violet-500/10 border-b border-white/[0.07]">
+              <span className="text-xs font-mono text-violet-200">✦ {edit.label}</span>
             </div>
             <div className="px-3 py-2 space-y-1.5">
               {edit.original && (
-                <div className="text-xs text-red-400/80 line-through opacity-70 leading-relaxed">{edit.original}</div>
+                <div className="text-xs text-rose-300/80 line-through opacity-70 leading-relaxed">{edit.original}</div>
               )}
-              <div className="text-xs text-emerald-400 leading-relaxed">{edit.suggested}</div>
+              <div className="text-xs text-emerald-300 leading-relaxed">{edit.suggested}</div>
               {edit.reason && <p className="text-xs text-slate-500 leading-relaxed pt-0.5">{edit.reason}</p>}
             </div>
             {status === 'applied' ? (

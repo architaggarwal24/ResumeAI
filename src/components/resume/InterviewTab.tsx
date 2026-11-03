@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useResumeStore } from '@/store/resumeStore'
 import { Button } from '@/components/ui/primitives'
 import { cn, generateId, scoreColor } from '@/lib/utils'
-import { BriefcaseIcon, Send, Loader2, RotateCcw, TrendingUp, BookOpen, AlertTriangle, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { BriefcaseIcon, Send, Loader2, RotateCcw, TrendingUp, BookOpen, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, Target, MessagesSquare, BarChart3, ClipboardList, type LucideIcon } from 'lucide-react'
 import type { InterviewMessage, MockInterviewDebrief } from '@/types/resume'
 
 const DEBRIEF_TRIGGERS = ['debrief', 'show debrief', 'show results', 'get results', 'see results']
@@ -173,28 +173,28 @@ export function InterviewTab() {
             <BriefcaseIcon size={18} className="text-violet-400" />
           </div>
           <div>
-            <h2 className="font-bold text-lg">Mock Interview</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-white">Mock Interview</h2>
             <p className="text-xs text-slate-500 mt-0.5">8-round simulation with a real hiring manager lens</p>
           </div>
         </div>
 
         <div className="space-y-4 mb-8">
-          <div className="bg-[#16181b] border border-white/7 rounded-xl p-4 space-y-2.5">
-            <InfoRow icon="🎯" label="5 technical questions" sub="Role-specific, tailored to your actual resume and stack" />
-            <InfoRow icon="💬" label="3 behavioural questions" sub="STAR-format, with real interviewer pushback" />
-            <InfoRow icon="📊" label="Per-answer ratings" sub="Scored out of 10, with coaching after each response" />
-            <InfoRow icon="📋" label="Full debrief" sub="Hireability score, weakest answers, personalized study plan" />
+          <div className="bg-white/[0.035] backdrop-blur-xl border border-white/[0.08] rounded-xl p-4 space-y-2.5">
+            <InfoRow icon={Target} label="5 technical questions" sub="Role-specific, tailored to your actual resume and stack" />
+            <InfoRow icon={MessagesSquare} label="3 behavioural questions" sub="STAR-format, with real interviewer pushback" />
+            <InfoRow icon={BarChart3} label="Per-answer ratings" sub="Scored out of 10, with coaching after each response" />
+            <InfoRow icon={ClipboardList} label="Full debrief" sub="Hireability score, weakest answers, personalized study plan" />
           </div>
         </div>
 
         <div className="mb-5">
-          <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">Target role <span className="text-slate-600">(optional — helps calibrate questions)</span></label>
+          <label className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 block">Target role <span className="text-slate-500">(optional — helps calibrate questions)</span></label>
           <input
             type="text"
             value={targetRole}
             onChange={e => setTargetRole(e.target.value)}
             placeholder="e.g. Senior Backend Engineer, Product Manager, Data Scientist"
-            className="w-full bg-[#1c1f23] border border-white/8 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50"
+            className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)]"
             onKeyDown={e => e.key === 'Enter' && startInterview()}
           />
         </div>
@@ -203,7 +203,7 @@ export function InterviewTab() {
           <BriefcaseIcon size={15} />
           Start Interview
         </Button>
-        <p className="text-xs text-slate-600 text-center mt-3">Uses your connected AI provider · ~10-15 minutes</p>
+        <p className="text-xs text-slate-500 text-center mt-3">Uses your connected AI provider · ~10-15 minutes</p>
       </div>
     )
   }
@@ -212,7 +212,7 @@ export function InterviewTab() {
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-120px)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-white/7 shrink-0">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.08] shrink-0">
         <div className="flex items-center gap-2">
           <BriefcaseIcon size={15} className="text-violet-400" />
           <span className="text-sm font-medium">Mock Interview</span>
@@ -267,7 +267,7 @@ export function InterviewTab() {
 
       {/* Input */}
       {!debrief && (
-        <div className="px-6 py-4 border-t border-white/7 shrink-0">
+        <div className="px-6 py-4 border-t border-white/[0.08] shrink-0">
           <div className="flex gap-2 items-end">
             <textarea
               ref={textareaRef}
@@ -283,7 +283,7 @@ export function InterviewTab() {
               }}
               placeholder={streaming ? 'Interviewer is responding…' : showDebriefButton ? "Type 'debrief' or click the button above…" : 'Your answer…'}
               disabled={streaming}
-              className="flex-1 bg-[#1c1f23] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none disabled:opacity-50 leading-relaxed"
+              className="flex-1 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-300/60 focus:shadow-[0_0_0_4px_rgba(139,92,246,.16)] resize-none disabled:opacity-50 leading-relaxed"
             />
             <button
               onClick={handleSend}
@@ -293,7 +293,7 @@ export function InterviewTab() {
               {streaming ? <Loader2 size={15} className="spin" /> : <Send size={15} />}
             </button>
           </div>
-          <p className="text-xs text-slate-600 mt-1.5 ml-1">Enter to send · Shift+Enter for new line</p>
+          <p className="text-xs text-slate-500 mt-1.5 ml-1">Enter to send · Shift+Enter for new line</p>
         </div>
       )}
     </div>
@@ -302,10 +302,10 @@ export function InterviewTab() {
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function InfoRow({ icon, label, sub }: { icon: string; label: string; sub: string }) {
+function InfoRow({ icon: Icon, label, sub }: { icon: LucideIcon; label: string; sub: string }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="text-base shrink-0">{icon}</span>
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-violet-400/15 text-violet-200"><Icon size={15} /></span>
       <div>
         <p className="text-sm text-slate-200 font-medium">{label}</p>
         <p className="text-xs text-slate-500">{sub}</p>
@@ -318,7 +318,7 @@ function MessageBubble({ message, streaming }: { message: InterviewMessage; stre
   if (message.role === 'system') {
     return (
       <div className="flex justify-center">
-        <span className="text-xs text-slate-500 bg-white/4 border border-white/8 rounded-full px-3 py-1">
+        <span className="text-xs text-slate-500 bg-white/[0.04] border border-white/10 rounded-full px-3 py-1">
           {message.content}
         </span>
       </div>
@@ -336,7 +336,7 @@ function MessageBubble({ message, streaming }: { message: InterviewMessage; stre
       <div className={cn(
         'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
         isInterviewer
-          ? 'bg-[#1c1f23] border border-white/7 text-slate-200 rounded-tl-sm'
+          ? 'bg-white/[0.04] border border-white/[0.08] text-slate-200 rounded-tl-sm'
           : 'bg-violet-600/20 border border-violet-500/20 text-violet-100 rounded-tr-sm'
       )}>
         {message.content || (streaming ? (
@@ -374,9 +374,9 @@ function DebriefCard({
   }
 
   return (
-    <div className="border border-violet-500/20 bg-[#16181b] rounded-2xl overflow-hidden">
+    <div className="border border-violet-500/20 bg-white/[0.035] backdrop-blur-xl rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-white/7 bg-violet-500/5">
+      <div className="px-5 py-4 border-b border-white/[0.08] bg-violet-500/5">
         <p className="text-xs font-mono text-violet-400/70 uppercase tracking-wider mb-3">Interview Debrief</p>
         <div className="flex items-center gap-5">
           {/* Score ring */}
@@ -419,7 +419,7 @@ function DebriefCard({
             </p>
             <div className="space-y-2">
               {debrief.weakestAnswers.map((w, i) => (
-                <div key={i} className="border border-white/7 rounded-xl overflow-hidden">
+                <div key={i} className="border border-white/[0.08] rounded-xl overflow-hidden">
                   <button
                     onClick={() => setExpandedWeakness(expandedWeakness === i ? null : i)}
                     className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-white/3 transition-colors"
@@ -429,14 +429,14 @@ function DebriefCard({
                     {expandedWeakness === i ? <ChevronUp size={13} className="text-slate-500 shrink-0 mt-0.5" /> : <ChevronDown size={13} className="text-slate-500 shrink-0 mt-0.5" />}
                   </button>
                   {expandedWeakness === i && (
-                    <div className="px-4 pb-4 border-t border-white/7 pt-3 space-y-3">
+                    <div className="px-4 pb-4 border-t border-white/[0.08] pt-3 space-y-3">
                       <div>
                         <p className="text-xs font-mono text-slate-500 mb-1">What was weak</p>
-                        <p className="text-xs text-red-400/80 bg-red-400/5 border border-red-400/15 rounded-lg px-3 py-2 leading-relaxed">{w.issue}</p>
+                        <p className="text-xs text-red-400/80 bg-red-400/5 border border-red-400/15 rounded-xl px-3 py-2 leading-relaxed">{w.issue}</p>
                       </div>
                       <div>
                         <p className="text-xs font-mono text-slate-500 mb-1">What a top candidate would say</p>
-                        <p className="text-xs text-emerald-400 bg-emerald-400/5 border border-emerald-400/15 rounded-lg px-3 py-2 leading-relaxed">{w.betterAnswer}</p>
+                        <p className="text-xs text-emerald-400 bg-emerald-400/5 border border-emerald-400/15 rounded-xl px-3 py-2 leading-relaxed">{w.betterAnswer}</p>
                       </div>
                     </div>
                   )}
@@ -454,7 +454,7 @@ function DebriefCard({
             </p>
             <div className="space-y-1.5">
               {debrief.questionsToRehearse.map((q, i) => (
-                <div key={i} className="flex items-start gap-2.5 text-xs text-slate-400 bg-white/3 border border-white/7 rounded-lg px-3 py-2">
+                <div key={i} className="flex items-start gap-2.5 text-xs text-slate-400 bg-white/3 border border-white/[0.08] rounded-xl px-3 py-2">
                   <span className="text-amber-400/60 font-mono shrink-0">{i + 1}.</span>
                   <span className="leading-relaxed">{q}</span>
                 </div>

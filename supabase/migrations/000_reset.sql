@@ -3,6 +3,11 @@
 -- ResumeAI — RESET SCRIPT
 -- Run this in Supabase SQL Editor to wipe and recreate all tables cleanly.
 -- Safe to run multiple times.
+--
+-- ⚠ This DELETES ALL DATA. Afterwards, run the remaining migrations in order:
+--   002_secure_share_access.sql → 003_security_hardening.sql → 004_atomic_caps.sql
+-- They add the share-access function, the share-password lockout, column-level
+-- grants on `users` and the per-user caps. Until then the app is not fully secured.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ─── Drop everything in reverse dependency order ──────────────────────────────
@@ -226,16 +231,26 @@ CREATE POLICY "cover_letters_own" ON public.cover_letters
     resume_id IN (SELECT id FROM public.resumes WHERE user_id = auth.uid())
   );
 
--- Job applications: own only
+-- Job applications: own only; a linked resume must also be the owner's.
 CREATE POLICY "job_apps_own" ON public.job_applications
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (
+    auth.uid() = user_id
+    AND (resume_id IS NULL OR EXISTS (SELECT 1 FROM public.resumes r WHERE r.id = resume_id AND r.user_id = auth.uid()))
+  );
 
--- Resume shares: owner manages, public can read (for /s/[slug] page)
+-- Resume shares: owner only, and the linked resume must be the owner's.
+-- There is deliberately NO public read policy: a `FOR SELECT USING (true)` rule
+-- would let anyone list every share (slugs, password hashes, expiry). Public
+-- access goes only through get_shared_resume() — see 002/003.
 CREATE POLICY "shares_owner" ON public.resume_shares
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "shares_public_read" ON public.resume_shares
-  FOR SELECT USING (true);
+  FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (SELECT 1 FROM public.resumes r WHERE r.id = resume_id AND r.user_id = auth.uid())
+  );
 
 -- Notifications: own only
 CREATE POLICY "notifications_own" ON public.notifications

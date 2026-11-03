@@ -2,13 +2,16 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { motion } from 'motion/react'
+import { ArrowRight, MailCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/primitives'
 import { AuthShell } from '@/components/auth/AuthShell'
-import FloatInput from '@/components/vendor/smoothui/float-input'
-import { Globe, Eye, EyeOff, MailCheck } from 'lucide-react'
-
-const FIELD = 'h-12 rounded-xl border-white/12 bg-[#0b0c0d] text-slate-100 focus-visible:ring-violet-500/40 focus-visible:ring-offset-0'
+import { FormError, OAuthButton, OrDivider, RevealToggle, StrengthMeter } from '@/components/auth/AuthBits'
+import { Field } from '@/components/ui/glass/Field'
+import { Button } from '@/components/ui/glass/Button'
+import { SPRING } from '@/lib/motion'
+import { clientAppOrigin } from '@/lib/security/app-origin'
+import { isExistingAccountError, publicAuthError } from '@/lib/security/auth-messages'
 
 export default function SignupPage() {
   const supabase = createClient()
@@ -25,9 +28,11 @@ export default function SignupPage() {
     setLoading(true); setError('')
     const { error } = await supabase.auth.signUp({
       email, password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${clientAppOrigin()}/auth/callback` },
     })
-    if (error) { setError(error.message); setLoading(false); return }
+    // An existing account gets the same "check your email" screen as a new one,
+    // so signup can't be used to probe which emails are registered.
+    if (error && !isExistingAccountError(error)) { setError(publicAuthError('signup', error)); setLoading(false); return }
     setDone(true)
   }
 
@@ -35,16 +40,26 @@ export default function SignupPage() {
     setLoading(true); setError('')
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${clientAppOrigin()}/auth/callback` },
     })
-    if (error) { setError(error.message); setLoading(false) }
+    if (error) { setError(publicAuthError('oauth', error)); setLoading(false) }
   }
 
   if (done) return (
-    <AuthShell title="Check your email" subtitle="One more step.">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-        <div className="pop mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-violet-500/15 text-violet-300"><MailCheck size={22} /></div>
-        <p className="text-sm text-slate-400">We sent a confirmation link to <strong className="text-slate-200">{email}</strong></p>
+    <AuthShell title="Check your email" subtitle="One more step and you’re in.">
+      <div className="text-center">
+        <motion.div
+          initial={{ scale: 0.4, rotate: -20, opacity: 0 }}
+          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+          transition={SPRING.bouncy}
+          className="relative mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-violet-500/20 text-violet-200 shadow-[0_0_40px_-6px_rgba(139,92,246,.8)]"
+        >
+          <span aria-hidden className="absolute inset-0 animate-[ping-soft_2s_ease-out_infinite] rounded-2xl border border-violet-300/50" />
+          <MailCheck size={28} />
+        </motion.div>
+        <p className="text-sm text-slate-300">If this address can be used, a confirmation link is on its way to</p>
+        <p className="mt-1 font-mono text-sm text-white">{email}</p>
+        <p className="mt-5 text-xs text-slate-500">Can’t find it? Check spam. Already have an account? <Link href="/login" className="text-violet-300 hover:underline">Sign in</Link>.</p>
       </div>
     </AuthShell>
   )
@@ -53,33 +68,23 @@ export default function SignupPage() {
     <AuthShell
       title="Create your account"
       subtitle="Free forever · bring your own AI key."
-      footer={<>Have an account?{' '}<Link href="/login" className="text-violet-300 underline-offset-4 hover:underline">Sign in</Link></>}
+      footer={<>Have an account?{' '}<Link href="/login" className="font-medium text-violet-300 underline-offset-4 hover:underline">Sign in</Link></>}
     >
-      <button
-        type="button" onClick={handleGoogle} disabled={loading}
-        className="mb-5 flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] py-3 text-sm font-medium transition-colors hover:bg-white/[0.08] disabled:opacity-50"
-      >
-        <Globe size={16} />Continue with Google
-      </button>
+      <OAuthButton onClick={handleGoogle} disabled={loading}>Continue with Google</OAuthButton>
+      <OrDivider />
 
-      <div className="relative mb-5">
-        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/8" /></div>
-        <div className="relative flex justify-center"><span className="bg-[#0b0c0d] px-3 text-xs text-slate-500">or with email</span></div>
-      </div>
-
-      <form onSubmit={handleSignup} className="space-y-5">
-        <FloatInput label="Email" type="email" name="email" required autoComplete="email" value={email} onChange={setEmail} inputClassName={FIELD} />
-        <FloatInput
-          label="Password (8+ characters)" type={show ? 'text' : 'password'} name="password" required minLength={8} autoComplete="new-password"
-          value={password} onChange={setPassword} inputClassName={`${FIELD} pr-11`}
-          trailing={
-            <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? 'Hide password' : 'Show password'} className="text-slate-500 transition-colors hover:text-slate-200">
-              {show ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          }
+      <form onSubmit={handleSignup} className="space-y-4">
+        <Field label="Email" type="email" name="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} />
+        <Field
+          label="Password" type={show ? 'text' : 'password'} name="password" required minLength={8} autoComplete="new-password"
+          value={password} onChange={e => setPassword(e.target.value)}
+          trailing={<RevealToggle shown={show} onToggle={() => setShow(s => !s)} />}
+          hint={<StrengthMeter password={password} />}
         />
-        {error && <p role="alert" className="rounded-lg border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">{error}</p>}
-        <Button variant="primary" size="lg" className="w-full justify-center" loading={loading} type="submit">Create account</Button>
+        <FormError message={error} />
+        <Button type="submit" size="lg" loading={loading} className="w-full" trailing={<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}>
+          Create account
+        </Button>
       </form>
     </AuthShell>
   )
